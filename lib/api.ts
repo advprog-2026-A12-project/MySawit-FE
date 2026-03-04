@@ -17,27 +17,27 @@ async function fetcher(url: string, options?: RequestInit) {
     return response.json();
 }
 
-
- //* Get my harvest list
-
+// Get my harvest list
 export async function getMyHarvest(params?: {
     startDate?: string;
     endDate?: string;
     status?: string;
 }) {
-    const query = new URLSearchParams(params as any).toString();
+    const cleanParams = Object.fromEntries(
+        Object.entries(params || {}).filter(([_, value]) => value !== "")
+    );
 
-    return fetcher(`${API_BASE}/harvest/my?${query}`, {
+    const query = new URLSearchParams(cleanParams as any).toString();
+    const queryString = query ? `?${query}` : "";
+
+    return fetcher(`${API_BASE}/harvest/my${queryString}`, {
         headers: {
             "X-USER-ID": "123e4567-e89b-12d3-a456-426614174000",
             "X-ROLE": "BURUH",
         },
     });
 }
-
-
-  // Get harvest detail
-
+// Get harvest detail
 export async function getHarvestDetail(id: string) {
     return fetcher(`${API_BASE}/harvest/${id}`);
 }
