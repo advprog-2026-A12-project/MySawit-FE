@@ -24,10 +24,9 @@ export async function getMyHarvest(params?: {
     status?: string;
 }) {
     const cleanParams = Object.fromEntries(
-        Object.entries(params || {}).filter(([_, value]) => value !== "")
-    );
-
-    const query = new URLSearchParams(cleanParams as any).toString();
+        Object.entries(params || {}).filter((entry) => entry[1] !== "" && entry[1] !== undefined)
+    ) as Record<string, string>;
+    const query = new URLSearchParams(cleanParams).toString();
     const queryString = query ? `?${query}` : "";
 
     return fetcher(`${API_BASE}/harvest/my${queryString}`, {
@@ -37,6 +36,7 @@ export async function getMyHarvest(params?: {
         },
     });
 }
+
 // Get harvest detail
 export async function getHarvestDetail(id: string) {
     return fetcher(`${API_BASE}/harvest/${id}`);

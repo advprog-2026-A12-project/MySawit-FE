@@ -80,6 +80,7 @@ export default function HarvestDetailPage() {
                         <p className="font-semibold mb-2">Foto Panen:</p>
                         <div className="flex flex-wrap gap-3 justify-center">
                             {data.photos.map((url, idx) => (
+                                /* eslint-disable-next-line @next/next/no-img-element */
                                 <img
                                     key={idx}
                                     src={url}

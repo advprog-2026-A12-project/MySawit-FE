@@ -43,13 +43,14 @@ export default function HarvestPage() {
     // Panggil fetch pertama kali saat halaman dimuat
     useEffect(() => {
         fetchHarvests();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     //  fungsi handleDelete untuk memproses penghapusan data
     const handleDelete = async (e: React.MouseEvent, id: string) => {
         e.preventDefault(); // Mencegah klik tombol memicu navigasi <Link> ke halaman detail
 
-        if (!confirm("Yakin ingin menghapus riwayat ini? (Hanya untuk testing)")) return;
+        if (!confirm("Yakin ingin menghapus riwayat ini?")) return;
 
         try {
             await deleteHarvest(id);
