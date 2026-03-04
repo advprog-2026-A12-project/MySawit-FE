@@ -18,7 +18,6 @@ export default function HarvestDetailPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
-    const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8082";
 
     useEffect(() => {
         async function fetchData() {
@@ -83,7 +82,7 @@ export default function HarvestDetailPage() {
                             {data.photos.map((url, idx) => (
                                 <img
                                     key={idx}
-                                    src={`${BACKEND_URL}${url}`}
+                                    src={url}
                                     alt={`Foto panen ${idx + 1}`}
                                     className="w-28 h-28 object-cover rounded-lg border border-gray-300 shadow-sm"
                                 />

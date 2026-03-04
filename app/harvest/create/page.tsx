@@ -14,6 +14,8 @@ export default function HarvestCreatePage() {
     const [submitting, setSubmitting] = useState(false);
     const [alreadySubmitted, setAlreadySubmitted] = useState(false);
 
+    const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8082";
+
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
             setPhotos(Array.from(e.target.files));
@@ -42,8 +44,7 @@ export default function HarvestCreatePage() {
             formData.append("reportNote", reportNote.trim());
 
             photos.forEach((photo) => formData.append("photos", photo));
-
-            const res = await fetch("http://localhost:8082/api/harvest", {
+            const res = await fetch(`${BACKEND_URL}/api/harvest`, {
                 method: "POST",
                 headers: {
                     "X-USER-ID": "123e4567-e89b-12d3-a456-426614174000",
@@ -58,7 +59,8 @@ export default function HarvestCreatePage() {
             }
 
             if (!res.ok) {
-                const errData: { message?: string } = await res.json().catch(() => ({}));
+                // Menangani error jika response bukan JSON
+                const errData = await res.json().catch(() => ({}));
                 throw new Error(errData.message || "Terjadi kesalahan saat submit harvest");
             }
 
@@ -99,7 +101,7 @@ export default function HarvestCreatePage() {
                         required
                         disabled={alreadySubmitted}
                         min={0}
-                        className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-400"
+                        className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-400 bg-white"
                     />
                 </div>
 
@@ -110,7 +112,7 @@ export default function HarvestCreatePage() {
                         value={reportNote}
                         onChange={(e) => setReportNote(e.target.value)}
                         disabled={alreadySubmitted}
-                        className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-400"
+                        className="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-400 bg-white"
                     />
                 </div>
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getMyHarvest } from "@/lib/api";
+import { getMyHarvest, deleteHarvest } from "@/lib/api";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -17,12 +17,12 @@ export default function HarvestPage() {
     const [loading, setLoading] = useState(true);
     const router = useRouter();
 
-    // 1. Tambahkan state untuk filter
+    // state untuk filter
     const [startDate, setStartDate] = useState("");
     const [endDate, setEndDate] = useState("");
     const [status, setStatus] = useState("");
 
-    // 2. Buat fungsi fetch terpisah agar bisa dipanggil ulang saat tombol filter ditekan
+    // fungsi fetch terpisah agar bisa dipanggil ulang saat tombol filter ditekan
     const fetchHarvests = async () => {
         setLoading(true);
         try {
@@ -45,6 +45,22 @@ export default function HarvestPage() {
         fetchHarvests();
     }, []);
 
+    //  fungsi handleDelete untuk memproses penghapusan data
+    const handleDelete = async (e: React.MouseEvent, id: string) => {
+        e.preventDefault(); // Mencegah klik tombol memicu navigasi <Link> ke halaman detail
+
+        if (!confirm("Yakin ingin menghapus riwayat ini? (Hanya untuk testing)")) return;
+
+        try {
+            await deleteHarvest(id);
+            alert("Data berhasil dihapus!");
+            fetchHarvests(); // Refresh daftar panen agar data yang dihapus langsung hilang dari layar
+        } catch (error) {
+            console.error(error);
+            alert("Gagal menghapus data. Pastikan backend sudah menyala dan endpoint tersedia.");
+        }
+    };
+
     return (
         <div className="p-6 bg-gray-50 min-h-screen text-black">
             <div className="flex justify-between items-center mb-6">
@@ -57,7 +73,7 @@ export default function HarvestPage() {
                 </button>
             </div>
 
-            {/* 3. Tambahkan UI Filter */}
+            {/* UI Filter */}
             <div className="bg-white p-4 rounded-lg shadow-sm mb-6 flex flex-col md:flex-row gap-4 items-end">
                 <div className="flex flex-col w-full md:w-auto">
                     <label className="text-sm font-semibold mb-1">Dari Tanggal</label>
@@ -109,10 +125,19 @@ export default function HarvestPage() {
                 <div className="grid gap-4">
                     {data.map((item) => (
                         <Link key={item.id} href={`/harvest/${item.id}`}>
-                            <div className="bg-white border shadow-sm p-4 rounded-lg hover:shadow-md transition-all cursor-pointer">
-                                <p className="text-black font-medium">Kg: {item.kilogram}</p>
-                                <p className="text-black">Status: {item.status}</p>
-                                <p className="text-black">Tanggal: {item.harvestDate}</p>
+                            {/* 3. Ubah UI card menjadi flex untuk meletakkan tombol Hapus di kanan */}
+                            <div className="bg-white border shadow-sm p-4 rounded-lg hover:shadow-md transition-all cursor-pointer flex justify-between items-center">
+                                <div>
+                                    <p className="text-black font-medium">Kg: {item.kilogram}</p>
+                                    <p className="text-black">Status: {item.status}</p>
+                                    <p className="text-black">Tanggal: {item.harvestDate}</p>
+                                </div>
+                                <button
+                                    onClick={(e) => handleDelete(e, item.id)}
+                                    className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition-colors text-sm font-semibold"
+                                >
+                                    Hapus
+                                </button>
                             </div>
                         </Link>
                     ))}

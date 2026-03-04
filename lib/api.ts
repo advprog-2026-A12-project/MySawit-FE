@@ -41,3 +41,21 @@ export async function getMyHarvest(params?: {
 export async function getHarvestDetail(id: string) {
     return fetcher(`${API_BASE}/harvest/${id}`);
 }
+
+// Fungsi untuk delete harvest (Testing dulu aja)
+export async function deleteHarvest(id: string) {
+    const response = await fetch(`${API_BASE}/harvest/${id}`, {
+        method: "DELETE",
+        headers: {
+            "Content-Type": "application/json",
+            "X-USER-ID": "123e4567-e89b-12d3-a456-426614174000",
+            "X-ROLE": "BURUH",
+        },
+    });
+
+    if (!response.ok) {
+        throw new Error("Gagal menghapus data");
+    }
+
+    return true;
+}
