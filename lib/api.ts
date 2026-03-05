@@ -5,6 +5,8 @@ async function fetcher(url: string, options?: RequestInit) {
         ...options,
         headers: {
             "Content-Type": "application/json",
+            "X-USER-ID": "11111111-1111-1111-1111-111111111111",
+            "X-ROLE": "BURUH",
             ...options?.headers,
         },
     });
@@ -16,7 +18,6 @@ async function fetcher(url: string, options?: RequestInit) {
 
     return response.json();
 }
-
 
 // GET MY HARVEST LIST
 export async function getMyHarvest(params?: {
