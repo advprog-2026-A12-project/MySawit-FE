@@ -1,5 +1,6 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8082/api";
 
+
 async function fetcher(url: string, options?: RequestInit) {
     const response = await fetch(url, {
         ...options,
