@@ -1,6 +1,5 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8082/api";
 
-
 async function fetcher(url: string, options?: RequestInit) {
     const response = await fetch(url, {
         ...options,
@@ -18,45 +17,37 @@ async function fetcher(url: string, options?: RequestInit) {
     return response.json();
 }
 
-// Get my harvest list
+
+// GET MY HARVEST LIST
 export async function getMyHarvest(params?: {
     startDate?: string;
     endDate?: string;
     status?: string;
 }) {
     const cleanParams = Object.fromEntries(
-        Object.entries(params || {}).filter((entry) => entry[1] !== "" && entry[1] !== undefined)
+        Object.entries(params || {}).filter(
+            ([_, value]) => value !== "" && value !== undefined
+        )
     ) as Record<string, string>;
+
     const query = new URLSearchParams(cleanParams).toString();
     const queryString = query ? `?${query}` : "";
 
-    return fetcher(`${API_BASE}/harvest/my${queryString}`, {
-        headers: {
-            "X-USER-ID": "123e4567-e89b-12d3-a456-426614174000",
-            "X-ROLE": "BURUH",
-        },
-    });
+    return fetcher(`${API_BASE}/harvest/my${queryString}`);
 }
 
-// Get harvest detail
+
+// GET HARVEST DETAIL
 export async function getHarvestDetail(id: string) {
     return fetcher(`${API_BASE}/harvest/${id}`);
 }
 
-// Fungsi untuk delete harvest (Testing dulu aja)
-export async function deleteHarvest(id: string) {
-    const response = await fetch(`${API_BASE}/harvest/${id}`, {
-        method: "DELETE",
-        headers: {
-            "Content-Type": "application/json",
-            "X-USER-ID": "123e4567-e89b-12d3-a456-426614174000",
-            "X-ROLE": "BURUH",
-        },
-    });
 
-    if (!response.ok) {
-        throw new Error("Gagal menghapus data");
-    }
+// DELETE HARVEST
+export async function deleteHarvest(id: string) {
+    await fetcher(`${API_BASE}/harvest/${id}`, {
+        method: "DELETE",
+    });
 
     return true;
 }
