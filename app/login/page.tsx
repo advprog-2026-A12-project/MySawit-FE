@@ -3,7 +3,7 @@
 import { useState, FormEvent } from "react";
 import Link from "next/link";
 
-const API_BASE = process.env.NEXT_PUBLIC_AUTH_API_URL ?? "http://localhost:8081";
+const API_BASE = process.env.NEXT_PUBLIC_AUTH_API_URL ?? "http://localhost:8001";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -35,8 +35,8 @@ export default function LoginPage() {
       localStorage.setItem("refreshToken", body.data.refreshToken);
       localStorage.setItem("user", JSON.stringify(body.data.user));
 
-      // Redirect to home
-      window.location.href = "/";
+      // Redirect to user dashboard
+      window.location.href = "/user";
     } catch {
       setError("Tidak dapat terhubung ke server. Pastikan backend menyala.");
     } finally {
