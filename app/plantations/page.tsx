@@ -1,4 +1,6 @@
-// app/plantations/page.tsx
+"use client";
+
+import { useEffect, useState } from "react";
 
 interface Plantation {
     id: number;
@@ -6,21 +8,37 @@ interface Plantation {
     location: string;
 }
 
-async function getPlantations(): Promise<Plantation[]> {
-    try {
-        const res = await fetch(
-            `${process.env.NEXT_PUBLIC_SAWIT_API_URL ?? "http://localhost:8082"}/api/plantations`,
-            { cache: "no-store" }
-        );
-        if (!res.ok) return [];
-        return res.json();
-    } catch {
-        return [];
-    }
-}
+const API_BASE = process.env.NEXT_PUBLIC_SAWIT_API_URL ?? "http://localhost:8082";
 
-export default async function PlantationsPage() {
-    const plantations = await getPlantations();
+export default function PlantationsPage() {
+    const [plantations, setPlantations] = useState<Plantation[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        async function fetchPlantations() {
+            try {
+                const token = localStorage.getItem("accessToken");
+                const res = await fetch(`${API_BASE}/api/plantations`, {
+                    headers: {
+                        "Authorization": `Bearer ${token}`,
+                        "Content-Type": "application/json",
+                    },
+                });
+                if (!res.ok) {
+                    setError("Gagal mengambil data perkebunan.");
+                    return;
+                }
+                const data = await res.json();
+                setPlantations(data);
+            } catch {
+                setError("Tidak dapat terhubung ke server.");
+            } finally {
+                setLoading(false);
+            }
+        }
+        fetchPlantations();
+    }, []);
 
     return (
         <main className="min-h-screen bg-green-50 px-6 py-12">
@@ -34,12 +52,26 @@ export default async function PlantationsPage() {
                     <p className="text-green-700 mt-1 text-lg">Daftar Perkebunan</p>
                 </div>
 
+                {/* Loading */}
+                {loading && (
+                    <div className="bg-white rounded-2xl shadow-sm border border-green-200 p-10 text-center">
+                        <p className="text-gray-500 text-lg">Memuat data...</p>
+                    </div>
+                )}
+
+                {/* Error */}
+                {error && (
+                    <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 mb-4">
+                        {error}
+                    </div>
+                )}
+
                 {/* Content */}
-                {plantations.length === 0 ? (
+                {!loading && !error && plantations.length === 0 ? (
                     <div className="bg-white rounded-2xl shadow-sm border border-green-200 p-10 text-center">
                         <p className="text-gray-400 text-lg">Belum ada data perkebunan.</p>
                     </div>
-                ) : (
+                ) : !loading && !error ? (
                     <div className="grid gap-4">
                         {plantations.map((p) => (
                             <div
@@ -59,7 +91,7 @@ export default async function PlantationsPage() {
                             </div>
                         ))}
                     </div>
-                )}
+                ) : null}
                 <p className="text-center text-xs text-gray-400 mt-10">
                     MySawit · {new Date().toLocaleDateString("id-ID")}
                 </p>

@@ -1,3 +1,7 @@
+"use client";
+
+import { useEffect, useState } from "react";
+
 interface Delivery {
     id: string;
     supirName: string;
@@ -6,20 +10,37 @@ interface Delivery {
     createdAt: string;
 }
 
-async function getDeliveries() {
-    const res = await fetch('http://localhost:8082/api/deliveries', {
-        cache: 'no-store'
-    });
+const API_BASE = process.env.NEXT_PUBLIC_SAWIT_API_URL ?? "http://localhost:8082";
 
-    if (!res.ok) {
-        throw new Error('Gagal mengambil data dari backend. Pastikan server Spring Boot menyala!');
-    }
+export default function DeliveriesPage() {
+    const [deliveries, setDeliveries] = useState<Delivery[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
-    return res.json();
-}
-
-export default async function DeliveriesPage() {
-    const deliveries = await getDeliveries();
+    useEffect(() => {
+        async function fetchDeliveries() {
+            try {
+                const token = localStorage.getItem("accessToken");
+                const res = await fetch(`${API_BASE}/api/deliveries`, {
+                    headers: {
+                        "Authorization": `Bearer ${token}`,
+                        "Content-Type": "application/json",
+                    },
+                });
+                if (!res.ok) {
+                    setError("Gagal mengambil data pengiriman.");
+                    return;
+                }
+                const data = await res.json();
+                setDeliveries(data);
+            } catch {
+                setError("Tidak dapat terhubung ke server.");
+            } finally {
+                setLoading(false);
+            }
+        }
+        fetchDeliveries();
+    }, []);
 
     return (
         <main className="min-h-screen bg-gray-50 p-8">
@@ -30,6 +51,21 @@ export default async function DeliveriesPage() {
                     </div>
                 </div>
 
+                {/* Loading */}
+                {loading && (
+                    <div className="bg-white rounded-lg shadow border border-gray-200 p-10 text-center">
+                        <p className="text-gray-500 text-lg">Memuat data...</p>
+                    </div>
+                )}
+
+                {/* Error */}
+                {error && (
+                    <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 mb-4">
+                        {error}
+                    </div>
+                )}
+
+                {!loading && !error && (<>
                 <div className="bg-white rounded-lg shadow overflow-hidden border border-gray-200">
                     <div className="p-4 border-b border-gray-200 bg-gray-50">
                         <h2 className="font-semibold text-gray-700">Live Data</h2>
@@ -83,6 +119,7 @@ export default async function DeliveriesPage() {
                         <strong>Aturan Sistem:</strong> Muatan maksimal adalah 400 Kg sesuai batasan logistik modul 4.
                     </div>
                 </div>
+                </>)}
             </div>
         </main>
     );

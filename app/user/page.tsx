@@ -6,22 +6,16 @@ interface User {
   role: string;
 }
 
-async function getUsers(): Promise<User[]> {
-  const res = await fetch("http://localhost:8081/api/users", {
-    cache: "no-store",
-  });
+const dummyUsers: User[] = [
+  { id: 1, username: "admin01", email: "admin@mysawit.com", name: "Admin Utama", role: "ADMIN" },
+  { id: 2, username: "petani01", email: "budi@email.com", name: "Budi Santoso", role: "PETANI" },
+  { id: 3, username: "petani02", email: "siti@email.com", name: "Siti Aminah", role: "PETANI" },
+  { id: 4, username: "manajer01", email: "andi@email.com", name: "Andi Wijaya", role: "MANAJER" },
+  { id: 5, username: "petani03", email: "rina@email.com", name: "Rina Marlina", role: "PETANI" },
+];
 
-  if (!res.ok) {
-    throw new Error(
-      "Gagal mengambil data user dari backend. Pastikan server Spring Boot menyala!"
-    );
-  }
-
-  return res.json();
-}
-
-export default async function UserPage() {
-  const users = await getUsers();
+export default function UserPage() {
+  const users = dummyUsers;
 
   return (
     <main className="min-h-screen bg-gray-50 p-8">
