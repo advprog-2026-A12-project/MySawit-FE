@@ -3,7 +3,7 @@
 import { useState, FormEvent } from "react";
 import Link from "next/link";
 
-const API_BASE = process.env.NEXT_PUBLIC_AUTH_API_URL ?? "http://localhost:8081";
+const API_BASE = process.env.NEXT_PUBLIC_AUTH_API_URL ?? "http://localhost:8001";
 
 const ROLES = [
   { value: "BURUH", label: "Buruh Sawit" },
