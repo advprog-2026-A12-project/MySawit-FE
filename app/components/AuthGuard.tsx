@@ -1,6 +1,6 @@
 "use client";
 
-import { useSyncExternalStore, useCallback } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { getAccessToken, subscribeAuthChange } from "@/lib/auth-api";
 
@@ -20,27 +20,32 @@ function subscribeToStorage(callback: () => void) {
   return subscribeAuthChange(callback);
 }
 
+const subscribeNoop = () => () => {};
+
+function getClientSnapshot() {
+  return true;
+}
+
+function getServerSnapshot() {
+  return false;
+}
+
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
+  const isHydrated = useSyncExternalStore(subscribeNoop, getClientSnapshot, getServerSnapshot);
   const token = useSyncExternalStore(subscribeToStorage, getToken, () => null);
 
   const isPublic = isPublicPath(pathname);
 
-  const shouldRedirect = !isPublic && !token;
-
-  const handleRedirect = useCallback(() => {
-    if (shouldRedirect) {
+  useEffect(() => {
+    if (!isHydrated) return;
+    if (!isPublic && !token) {
       router.replace("/login");
     }
-  }, [shouldRedirect, router]);
+  }, [isHydrated, isPublic, token, router]);
 
-  // Trigger redirect synchronously during render if needed
-  if (shouldRedirect) {
-    // Schedule navigation after paint to avoid React warnings
-    if (typeof window !== "undefined") {
-      queueMicrotask(handleRedirect);
-    }
+  if (!isPublic && (!isHydrated || !token)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-green-50">
         <p className="text-green-800 text-sm">Memuat...</p>

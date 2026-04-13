@@ -205,12 +205,20 @@ export default function UserPage() {
               <h1 className="text-3xl font-bold tracking-tight text-green-900">Manajemen Pengguna</h1>
               <p className="mt-1 text-sm text-green-700">Kelola data user, filter role, dan nonaktifkan akun.</p>
             </div>
-            <Link
-              href="/profile"
-              className="inline-flex rounded-lg border border-green-300 bg-green-50 px-4 py-2 text-sm font-semibold text-green-800 hover:bg-green-100"
-            >
-              Profil Saya
-            </Link>
+            <div className="flex gap-2">
+              <Link
+                href="/assignments"
+                className="inline-flex rounded-lg border border-green-300 bg-green-50 px-4 py-2 text-sm font-semibold text-green-800 hover:bg-green-100"
+              >
+                Assignment
+              </Link>
+              <Link
+                href="/profile"
+                className="inline-flex rounded-lg border border-green-300 bg-green-50 px-4 py-2 text-sm font-semibold text-green-800 hover:bg-green-100"
+              >
+                Profil Saya
+              </Link>
+            </div>
           </div>
         </div>
 
