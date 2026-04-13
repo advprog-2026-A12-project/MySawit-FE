@@ -2,10 +2,18 @@
 
 import { useState, FormEvent } from "react";
 import Link from "next/link";
-
-const API_BASE = process.env.NEXT_PUBLIC_AUTH_API_URL ?? "http://localhost:8001";
+import { useRouter } from "next/navigation";
+import {
+  ApiError,
+  getMe,
+  login,
+  persistAuthSession,
+  persistUserProfile,
+  toAuthUrl,
+} from "@/lib/auth-api";
 
 export default function LoginPage() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -17,28 +25,26 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const res = await fetch(`${API_BASE}/api/v1/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
+      const loginResponse = await login({ email, password });
+      persistAuthSession(loginResponse.data);
 
-      const body = await res.json();
+      let redirectPath = "/profile";
 
-      if (!res.ok) {
-        setError(body.message ?? "Login gagal. Periksa kembali email dan password.");
-        return;
+      try {
+        const meResponse = await getMe();
+        persistUserProfile(meResponse.data);
+        redirectPath = meResponse.data.role === "ADMIN" ? "/user" : "/profile";
+      } catch {
+        // Keep fallback redirect if profile endpoint is temporarily unavailable.
       }
 
-      // Store tokens
-      localStorage.setItem("accessToken", body.data.accessToken);
-      localStorage.setItem("refreshToken", body.data.refreshToken);
-      localStorage.setItem("user", JSON.stringify(body.data.user));
-
-      // Redirect to user dashboard
-      window.location.href = "/user";
-    } catch {
-      setError("Tidak dapat terhubung ke server. Pastikan backend menyala.");
+      router.replace(redirectPath);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(err.message || "Login gagal. Periksa kembali email dan password.");
+      } else {
+        setError("Tidak dapat terhubung ke server. Pastikan backend menyala.");
+      }
     } finally {
       setLoading(false);
     }
@@ -119,7 +125,7 @@ export default function LoginPage() {
 
           {/* Google OAuth */}
           <a
-            href={`${API_BASE}/api/v1/auth/oauth2/google`}
+            href={toAuthUrl("/auth/oauth2/google")}
             className="flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition"
           >
             <svg className="h-5 w-5" viewBox="0 0 24 24">
