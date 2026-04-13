@@ -2,6 +2,7 @@
 
 import { useSyncExternalStore, useCallback } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { getAccessToken, subscribeAuthChange } from "@/lib/auth-api";
 
 const PUBLIC_PATHS = ["/login", "/register"];
 
@@ -12,13 +13,11 @@ function isPublicPath(pathname: string) {
 }
 
 function getToken() {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem("accessToken");
+  return getAccessToken();
 }
 
 function subscribeToStorage(callback: () => void) {
-  window.addEventListener("storage", callback);
-  return () => window.removeEventListener("storage", callback);
+  return subscribeAuthChange(callback);
 }
 
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
