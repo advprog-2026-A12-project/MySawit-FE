@@ -94,7 +94,13 @@ const USER_KEY = "user";
 
 export function getAccessToken() {
   if (typeof window === "undefined") return null;
-  return localStorage.getItem(ACCESS_TOKEN_KEY);
+  const token = localStorage.getItem(ACCESS_TOKEN_KEY);
+
+  if (!token || token === "null" || token === "undefined") {
+    return null;
+  }
+
+  return token;
 }
 
 export function getRefreshToken() {
