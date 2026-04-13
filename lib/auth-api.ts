@@ -16,6 +16,11 @@ export interface LoginResponseData {
   expiresIn: number;
 }
 
+export interface GoogleAuthPayload {
+  authorizationCode: string;
+  redirectUri?: string;
+}
+
 export interface UserProfile {
   id: string;
   username: string;
@@ -226,6 +231,16 @@ export async function login(payload: { email: string; password: string }) {
   return request<LoginResponseData>("/auth/login", {
     method: "POST",
     body: JSON.stringify(payload),
+  });
+}
+
+export async function loginWithGoogle(payload: GoogleAuthPayload) {
+  return request<LoginResponseData>("/auth/google", {
+    method: "POST",
+    body: JSON.stringify({
+      authorizationCode: payload.authorizationCode,
+      redirectUri: payload.redirectUri ?? "postmessage",
+    }),
   });
 }
 
