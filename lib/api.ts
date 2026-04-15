@@ -1,12 +1,35 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8082/api";
+const AUTH_BASE = process.env.NEXT_PUBLIC_AUTH_URL || "https://mysawit-auth.onrender.com/api/v1";
 
+// ── Token helpers ──────────────────────────────────────────────
+export function getToken(): string | null {
+    return localStorage.getItem("accessToken");
+}
+
+export function getUser(): { id: string; role: string; name: string } | null {
+    const raw = localStorage.getItem("user");
+    return raw ? JSON.parse(raw) : null;
+}
+
+export function saveAuth(token: string, user: object) {
+    localStorage.setItem("accessToken", token);
+    localStorage.setItem("user", JSON.stringify(user));
+}
+
+export function clearAuth() {
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("user");
+}
+
+// ── Base fetcher ───────────────────────────────────────────────
 async function fetcher(url: string, options?: RequestInit) {
+    const token = getToken();
+
     const response = await fetch(url, {
         ...options,
         headers: {
             "Content-Type": "application/json",
-            "X-USER-ID": "11111111-1111-1111-1111-111111111111",
-            "X-ROLE": "BURUH",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
             ...options?.headers,
         },
     });
@@ -19,36 +42,105 @@ async function fetcher(url: string, options?: RequestInit) {
     return response.json();
 }
 
-// GET MY HARVEST LIST
+// Fetcher khusus multipart (tidak set Content-Type, biar browser set boundary)
+async function fetcherMultipart(url: string, formData: FormData) {
+    const token = getToken();
+
+    const response = await fetch(url, {
+        method: "POST",
+        headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: formData,
+    });
+
+    if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || "Terjadi kesalahan saat submit");
+    }
+
+    return response.json();
+}
+
+// ── Auth ───────────────────────────────────────────────────────
+export async function login(email: string, password: string) {
+    const res = await fetch(`${AUTH_BASE}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || "Login gagal");
+
+    saveAuth(data.data.accessToken, data.data.user || {});
+    return data;
+}
+
+// ── BURUH: Submit panen (dengan foto) ─────────────────────────
+export async function submitHarvest(params: {
+    kilogram: number;
+    reportNote: string;
+    mandorId: string;
+    photos?: File[];
+}) {
+    const formData = new FormData();
+    formData.append("kilogram", params.kilogram.toString());
+    formData.append("reportNote", params.reportNote);
+    formData.append("mandorId", params.mandorId);
+    params.photos?.forEach((photo) => formData.append("photos", photo));
+
+    return fetcherMultipart(`${API_BASE}/harvest`, formData);
+}
+
+// ── BURUH: Lihat panen sendiri ─────────────────────────────────
 export async function getMyHarvest(params?: {
     startDate?: string;
     endDate?: string;
     status?: string;
 }) {
     const cleanParams = Object.fromEntries(
-        Object.entries(params || {}).filter(
-            ([_, value]) => value !== "" && value !== undefined
-        )
+        Object.entries(params || {}).filter(([_, v]) => v !== "" && v !== undefined)
     ) as Record<string, string>;
 
     const query = new URLSearchParams(cleanParams).toString();
-    const queryString = query ? `?${query}` : "";
-
-    return fetcher(`${API_BASE}/harvest/my${queryString}`);
+    return fetcher(`${API_BASE}/harvest/my${query ? `?${query}` : ""}`);
 }
 
+// ── MANDOR: Lihat panen bawahan ────────────────────────────────
+export async function getPanenBawahan(params?: {
+    buruhId?: string;
+    tanggalPanen?: string;
+}) {
+    const cleanParams = Object.fromEntries(
+        Object.entries(params || {}).filter(([_, v]) => v !== "" && v !== undefined)
+    ) as Record<string, string>;
 
-// GET HARVEST DETAIL
+    const query = new URLSearchParams(cleanParams).toString();
+    return fetcher(`${API_BASE}/harvest/bawahan${query ? `?${query}` : ""}`);
+}
+
+// ── MANDOR: Approve ────────────────────────────────────────────
+export async function approvePanen(id: string) {
+    return fetcher(`${API_BASE}/harvest/${id}/approve`, {
+        method: "PATCH",
+    });
+}
+
+// ── MANDOR: Reject ─────────────────────────────────────────────
+export async function rejectPanen(id: string, rejectionReason: string) {
+    return fetcher(`${API_BASE}/harvest/${id}/reject`, {
+        method: "PATCH",
+        body: JSON.stringify({ rejectionReason }),
+    });
+}
+
+// ── Detail & Delete ────────────────────────────────────────────
 export async function getHarvestDetail(id: string) {
     return fetcher(`${API_BASE}/harvest/${id}`);
 }
 
-
-// DELETE HARVEST
 export async function deleteHarvest(id: string) {
-    await fetcher(`${API_BASE}/harvest/${id}`, {
-        method: "DELETE",
-    });
-
+    await fetcher(`${API_BASE}/harvest/${id}`, { method: "DELETE" });
     return true;
 }
