@@ -20,16 +20,6 @@ export function getUser(): UserProfile | null {
     }
 }
 
-export function saveAuth(token: string, user: object) {
-    localStorage.setItem("accessToken", token);
-    localStorage.setItem("user", JSON.stringify(user));
-}
-
-export function clearAuth() {
-    localStorage.removeItem("accessToken");
-    localStorage.removeItem("user");
-}
-
 // ── Base fetcher ───────────────────────────────────────────────
 async function fetcher(url: string, options?: RequestInit) {
     const token = getToken();
@@ -80,18 +70,15 @@ export async function login(email: string, password: string) {
     persistAuthSession(res.data); // simpan token + user
     return res;
 }
-
 // ── BURUH: Submit panen (dengan foto) ─────────────────────────
 export async function submitHarvest(params: {
     kilogram: number;
     reportNote: string;
-    mandorId: string;
     photos?: File[];
 }) {
     const formData = new FormData();
     formData.append("kilogram", params.kilogram.toString());
     formData.append("reportNote", params.reportNote);
-    formData.append("mandorId", params.mandorId);
     params.photos?.forEach((photo) => formData.append("photos", photo));
 
     return fetcherMultipart(`${API_BASE}/harvest`, formData);
@@ -147,9 +134,4 @@ export async function getHarvestDetail(id: string) {
 export async function deleteHarvest(id: string) {
     await fetcher(`${API_BASE}/harvest/${id}`, { method: "DELETE" });
     return true;
-}
-
-export async function getMandors() {
-    const res = await getUsers({ role: "MANDOR" });
-    return res.data.content; // langsung ambil list
 }

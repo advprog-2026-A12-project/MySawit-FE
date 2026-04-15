@@ -1,40 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { submitHarvest, getUser, getMandors } from "@/lib/api";
+import { useState } from "react";
+import { submitHarvest } from "@/lib/api";
 import { useRouter } from "next/navigation";
 
 export default function HarvestCreatePage() {
     const [amount, setAmount] = useState<number | "">("");
     const [reportNote, setReportNote] = useState("");
-    const [mandorId, setMandorId] = useState("");
     const [photos, setPhotos] = useState<File[]>([]);
     const [message, setMessage] = useState("");
     const [submitting, setSubmitting] = useState(false);
     const [alreadySubmitted, setAlreadySubmitted] = useState(false);
 
-    // State baru untuk data Mandor
-    const [mandors, setMandors] = useState<{ id: string; name: string }[]>([]);
-    const [loadingMandors, setLoadingMandors] = useState(true);
-
     const router = useRouter();
-
-    // Fetch data Mandor saat komponen dimuat
-    useEffect(() => {
-        const fetchMandorsData = async () => {
-            try {
-                const res = await getMandors();
-                console.log("MANDORS:", res); // debug
-                setMandors(res);
-            } catch (error) {
-                console.error("Gagal mengambil data mandor:", error);
-            } finally {
-                setLoadingMandors(false);
-            }
-        };
-
-        fetchMandorsData();
-    }, []);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) setPhotos(Array.from(e.target.files));
@@ -51,10 +29,6 @@ export default function HarvestCreatePage() {
             setMessage("Catatan panen wajib diisi");
             return;
         }
-        if (mandorId.trim() === "") {
-            setMessage("Mandor wajib dipilih");
-            return;
-        }
 
         setSubmitting(true);
         setMessage("Submitting...");
@@ -63,14 +37,12 @@ export default function HarvestCreatePage() {
             const data = await submitHarvest({
                 kilogram: Number(amount),
                 reportNote: reportNote.trim(),
-                mandorId: mandorId.trim(),
                 photos,
             });
 
             setMessage(`✅ Sukses! ID Panen: ${data.id}`);
             setAmount("");
             setReportNote("");
-            setMandorId("");
             setPhotos([]);
             setAlreadySubmitted(false);
 
@@ -119,27 +91,6 @@ export default function HarvestCreatePage() {
                         disabled={alreadySubmitted}
                         className="w-full border rounded px-3 py-2 bg-white focus:ring-2 focus:ring-green-400"
                     />
-                </div>
-
-                {/* Revisi: Mandor ID menjadi Dropdown (Select) */}
-                <div>
-                    <label className="block font-medium mb-1">Pilih Mandor</label>
-                    <select
-                        value={mandorId}
-                        onChange={(e) => setMandorId(e.target.value)}
-                        required
-                        disabled={alreadySubmitted || loadingMandors}
-                        className="w-full border rounded px-3 py-2 bg-white focus:ring-2 focus:ring-green-400"
-                    >
-                        <option value="" disabled>
-                            {loadingMandors ? "Memuat data Mandor..." : "-- Pilih Mandor --"}
-                        </option>
-                        {mandors.map((mandor) => (
-                            <option key={mandor.id} value={mandor.id}>
-                                {mandor.name}
-                            </option>
-                        ))}
-                    </select>
                 </div>
 
                 <div>
