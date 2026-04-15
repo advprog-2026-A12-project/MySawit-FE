@@ -24,11 +24,8 @@ export default function HarvestCreatePage() {
         const fetchMandorsData = async () => {
             try {
                 const res = await getMandors();
-                // Menyesuaikan dengan struktur response MySawit
-                if (res && res.data) {
-                    const mandorList = res.data.content || res.data;
-                    setMandors(mandorList);
-                }
+                console.log("MANDORS:", res); // debug
+                setMandors(res);
             } catch (error) {
                 console.error("Gagal mengambil data mandor:", error);
             } finally {
