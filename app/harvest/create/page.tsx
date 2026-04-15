@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { submitHarvest, getUser } from "@/lib/api";
+import { useEffect, useState } from "react";
+import { submitHarvest, getUser, getMandors } from "@/lib/api";
 import { useRouter } from "next/navigation";
 
 export default function HarvestCreatePage() {
@@ -12,7 +12,32 @@ export default function HarvestCreatePage() {
     const [message, setMessage] = useState("");
     const [submitting, setSubmitting] = useState(false);
     const [alreadySubmitted, setAlreadySubmitted] = useState(false);
+
+    // State baru untuk data Mandor
+    const [mandors, setMandors] = useState<{ id: string; name: string }[]>([]);
+    const [loadingMandors, setLoadingMandors] = useState(true);
+
     const router = useRouter();
+
+    // Fetch data Mandor saat komponen dimuat
+    useEffect(() => {
+        const fetchMandorsData = async () => {
+            try {
+                const res = await getMandors();
+                // Menyesuaikan dengan struktur response MySawit
+                if (res && res.data) {
+                    const mandorList = res.data.content || res.data;
+                    setMandors(mandorList);
+                }
+            } catch (error) {
+                console.error("Gagal mengambil data mandor:", error);
+            } finally {
+                setLoadingMandors(false);
+            }
+        };
+
+        fetchMandorsData();
+    }, []);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) setPhotos(Array.from(e.target.files));
@@ -30,7 +55,7 @@ export default function HarvestCreatePage() {
             return;
         }
         if (mandorId.trim() === "") {
-            setMessage("Mandor ID wajib diisi");
+            setMessage("Mandor wajib dipilih");
             return;
         }
 
@@ -99,17 +124,25 @@ export default function HarvestCreatePage() {
                     />
                 </div>
 
-                {/* ← TAMBAH: Mandor ID */}
+                {/* Revisi: Mandor ID menjadi Dropdown (Select) */}
                 <div>
-                    <label className="block font-medium mb-1">Mandor ID</label>
-                    <input
-                        type="text"
+                    <label className="block font-medium mb-1">Pilih Mandor</label>
+                    <select
                         value={mandorId}
                         onChange={(e) => setMandorId(e.target.value)}
-                        placeholder="UUID mandor kamu"
-                        disabled={alreadySubmitted}
+                        required
+                        disabled={alreadySubmitted || loadingMandors}
                         className="w-full border rounded px-3 py-2 bg-white focus:ring-2 focus:ring-green-400"
-                    />
+                    >
+                        <option value="" disabled>
+                            {loadingMandors ? "Memuat data Mandor..." : "-- Pilih Mandor --"}
+                        </option>
+                        {mandors.map((mandor) => (
+                            <option key={mandor.id} value={mandor.id}>
+                                {mandor.name}
+                            </option>
+                        ))}
+                    </select>
                 </div>
 
                 <div>
