@@ -80,18 +80,15 @@ export async function login(email: string, password: string) {
     persistAuthSession(res.data); // simpan token + user
     return res;
 }
-
 // ── BURUH: Submit panen (dengan foto) ─────────────────────────
 export async function submitHarvest(params: {
     kilogram: number;
     reportNote: string;
-    mandorId: string;
     photos?: File[];
 }) {
     const formData = new FormData();
     formData.append("kilogram", params.kilogram.toString());
     formData.append("reportNote", params.reportNote);
-    formData.append("mandorId", params.mandorId);
     params.photos?.forEach((photo) => formData.append("photos", photo));
 
     return fetcherMultipart(`${API_BASE}/harvest`, formData);
