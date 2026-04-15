@@ -9,6 +9,8 @@ interface HarvestDetail {
     kilogram: number;
     status: string;
     reportNote: string;
+    rejectionReason?: string;
+    bisaDiangkutTruk?: boolean;
     photos: string[];
 }
 
@@ -18,11 +20,13 @@ export default function HarvestDetailPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
+    const isRejected = data?.status === "REJECTED";
 
     useEffect(() => {
         async function fetchData() {
             setLoading(true);
             setError("");
+
             try {
                 const res = await getHarvestDetail(id as string);
                 setData(res);
@@ -33,17 +37,22 @@ export default function HarvestDetailPage() {
                 setLoading(false);
             }
         }
+
         fetchData();
     }, [id]);
 
     if (loading)
         return (
-            <p className="text-center text-lg mt-10 text-gray-500">Loading...</p>
+            <p className="text-center text-lg mt-10 text-gray-500">
+                Loading...
+            </p>
         );
 
     if (error)
         return (
-            <p className="text-center text-lg mt-10 text-red-500">{error}</p>
+            <p className="text-center text-lg mt-10 text-red-500">
+                {error}
+            </p>
         );
 
     if (!data)
@@ -56,7 +65,9 @@ export default function HarvestDetailPage() {
     return (
         <div className="min-h-screen bg-gray-50 flex justify-center p-6">
             <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md text-black">
-                <h1 className="text-3xl font-bold mb-6 text-center">Detail Panen</h1>
+                <h1 className="text-3xl font-bold mb-6 text-center">
+                    Detail Panen
+                </h1>
 
                 <div className="space-y-4 mb-6">
                     <div className="flex justify-between bg-gray-100 rounded-md p-3">
@@ -73,6 +84,17 @@ export default function HarvestDetailPage() {
                         <span className="font-semibold">Catatan:</span>
                         <span>{data.reportNote || "-"}</span>
                     </div>
+
+                    {isRejected && data.rejectionReason && (
+                        <div className="flex justify-between bg-red-100 rounded-md p-3 border border-red-300">
+                            <span className="font-semibold text-red-700">
+                                Alasan Ditolak:
+                            </span>
+                            <span className="text-red-700">
+                                {data.rejectionReason}
+                            </span>
+                        </div>
+                    )}
                 </div>
 
                 {data.photos && data.photos.length > 0 && (
@@ -80,7 +102,7 @@ export default function HarvestDetailPage() {
                         <p className="font-semibold mb-2">Foto Panen:</p>
                         <div className="flex flex-wrap gap-3 justify-center">
                             {data.photos.map((url, idx) => (
-                                /* eslint-disable-next-line @next/next/no-img-element */
+                                // eslint-disable-next-line @next/next/no-img-element
                                 <img
                                     key={idx}
                                     src={url}
