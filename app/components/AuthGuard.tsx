@@ -1,7 +1,8 @@
 "use client";
 
-import { useSyncExternalStore, useCallback } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { ApiError, clearAuthSession, getAccessToken, getMe, subscribeAuthChange } from "@/lib/auth-api";
 
 const PUBLIC_PATHS = ["/login", "/register"];
 
@@ -12,36 +13,56 @@ function isPublicPath(pathname: string) {
 }
 
 function getToken() {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem("accessToken");
+  return getAccessToken();
 }
 
 function subscribeToStorage(callback: () => void) {
-  window.addEventListener("storage", callback);
-  return () => window.removeEventListener("storage", callback);
+  return subscribeAuthChange(callback);
+}
+
+function getServerTokenSnapshot() {
+  return undefined;
 }
 
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const token = useSyncExternalStore(subscribeToStorage, getToken, () => null);
+  const token = useSyncExternalStore(subscribeToStorage, getToken, getServerTokenSnapshot);
 
   const isPublic = isPublicPath(pathname);
 
-  const shouldRedirect = !isPublic && !token;
-
-  const handleRedirect = useCallback(() => {
-    if (shouldRedirect) {
+  useEffect(() => {
+    if (!isPublic && token === null) {
       router.replace("/login");
     }
-  }, [shouldRedirect, router]);
+  }, [isPublic, token, router]);
 
-  // Trigger redirect synchronously during render if needed
-  if (shouldRedirect) {
-    // Schedule navigation after paint to avoid React warnings
-    if (typeof window !== "undefined") {
-      queueMicrotask(handleRedirect);
-    }
+  useEffect(() => {
+    if (isPublic || !token) return;
+
+    let cancelled = false;
+
+    const verifySession = async () => {
+      try {
+        await getMe();
+      } catch (error) {
+        if (cancelled) return;
+
+        if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
+          clearAuthSession();
+          router.replace("/login");
+        }
+      }
+    };
+
+    void verifySession();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isPublic, token, router]);
+
+  if (!isPublic && (token === undefined || token === null)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-green-50">
         <p className="text-green-800 text-sm">Memuat...</p>
