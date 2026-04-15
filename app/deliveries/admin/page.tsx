@@ -40,8 +40,8 @@ export default function AdminDeliveryPage() {
                  }
                  const data = await res.json();
                  setDeliveries(data);
-             } catch (err: any) {
-                 setErrorMsg(err.message);
+             } catch (err: unknown) {
+                 setErrorMsg(err instanceof Error ? err.message : 'Terjadi kesalahan');
              } finally {
                  setLoading(false);
              }

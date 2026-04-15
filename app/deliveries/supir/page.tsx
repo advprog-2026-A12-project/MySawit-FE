@@ -1,22 +1,20 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { getStoredUser } from '@/lib/auth-api';
 
 export default function SupirDeliveryPage() {
     const router = useRouter();
-    const [authorized, setAuthorized] = useState(false);
+
+    const user = useMemo(() => getStoredUser(), []);
+    const authorized = user?.role === 'SUPIR_TRUK';
 
     useEffect(() => {
-        const user = getStoredUser();
-        // Cek Role Supir
-        if (!user || user.role !== 'SUPIR_TRUK') {
+        if (!authorized) {
             router.replace('/deliveries');
-            return;
         }
-        setAuthorized(true);
-    }, [router]);
+    }, [authorized, router]);
 
     if (!authorized) return <div className="p-8 text-center">Memverifikasi akses Anda...</div>;
 
@@ -25,7 +23,7 @@ export default function SupirDeliveryPage() {
             <div className="max-w-5xl mx-auto">
                 <h1 className="text-3xl font-bold text-blue-800 mb-4">Dashboard Supir: Tugas Pengiriman</h1>
                 <p className="text-gray-600 mb-8">
-                    Halaman ini khusus untuk Supir (RBAC: SUPIR_TRUK). 
+                    Halaman ini khusus untuk Supir (RBAC: SUPIR_TRUK).
                     Logika frontend untuk mengupdate status (PATCH /api/deliveries/:id/status) akan diproses di sini.
                 </p>
                 <div className="bg-white p-6 rounded-lg shadow border border-gray-200">
