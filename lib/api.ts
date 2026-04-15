@@ -1,3 +1,5 @@
+import {getUsers, UserProfile} from "@/lib/auth-api";
+
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8082/api";
 const AUTH_BASE = process.env.NEXT_PUBLIC_AUTH_URL || "https://mysawit-auth.onrender.com/api/v1";
 
@@ -5,10 +7,17 @@ const AUTH_BASE = process.env.NEXT_PUBLIC_AUTH_URL || "https://mysawit-auth.onre
 export function getToken(): string | null {
     return localStorage.getItem("accessToken");
 }
+export function getUser(): UserProfile | null {
+    if (typeof window === "undefined") return null;
 
-export function getUser(): { id: string; role: string; name: string } | null {
     const raw = localStorage.getItem("user");
-    return raw ? JSON.parse(raw) : null;
+    if (!raw) return null;
+
+    try {
+        return JSON.parse(raw) as UserProfile;
+    } catch {
+        return null;
+    }
 }
 
 export function saveAuth(token: string, user: object) {
@@ -63,18 +72,13 @@ async function fetcherMultipart(url: string, formData: FormData) {
 }
 
 // ── Auth ───────────────────────────────────────────────────────
+import { login as authLogin, persistAuthSession } from "@/lib/auth-api";
+
 export async function login(email: string, password: string) {
-    const res = await fetch(`${AUTH_BASE}/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-    });
+    const res = await authLogin({ email, password });
 
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || "Login gagal");
-
-    saveAuth(data.data.accessToken, data.data.user || {});
-    return data;
+    persistAuthSession(res.data); // simpan token + user
+    return res;
 }
 
 // ── BURUH: Submit panen (dengan foto) ─────────────────────────
@@ -146,6 +150,6 @@ export async function deleteHarvest(id: string) {
 }
 
 export async function getMandors() {
-    // Memanggil endpoint user dengan filter role MANDOR
-    return fetcher(`${AUTH_BASE}/users?role=MANDOR`);
+    const res = await getUsers({ role: "MANDOR" });
+    return res.data.content; // langsung ambil list
 }
