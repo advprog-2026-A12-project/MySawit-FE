@@ -144,3 +144,8 @@ export async function deleteHarvest(id: string) {
     await fetcher(`${API_BASE}/harvest/${id}`, { method: "DELETE" });
     return true;
 }
+
+export async function getMandors() {
+    // Memanggil endpoint user dengan filter role MANDOR
+    return fetcher(`${AUTH_BASE}/users?role=MANDOR`);
+}
