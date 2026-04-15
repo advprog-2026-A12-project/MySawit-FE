@@ -19,6 +19,8 @@ export interface LoginResponseData {
 export interface GoogleAuthPayload {
   authorizationCode: string;
   redirectUri?: string;
+  role?: Exclude<UserRole, "ADMIN">;
+  mandorCertificationNumber?: string | null;
 }
 
 export interface UserProfile {
@@ -235,12 +237,27 @@ export async function login(payload: { email: string; password: string }) {
 }
 
 export async function loginWithGoogle(payload: GoogleAuthPayload) {
+  const body: {
+    authorizationCode: string;
+    redirectUri: string;
+    role?: Exclude<UserRole, "ADMIN">;
+    mandorCertificationNumber?: string | null;
+  } = {
+    authorizationCode: payload.authorizationCode,
+    redirectUri: payload.redirectUri ?? "postmessage",
+  };
+
+  if (payload.role) {
+    body.role = payload.role;
+  }
+
+  if (payload.role === "MANDOR") {
+    body.mandorCertificationNumber = payload.mandorCertificationNumber ?? null;
+  }
+
   return request<LoginResponseData>("/auth/google", {
     method: "POST",
-    body: JSON.stringify({
-      authorizationCode: payload.authorizationCode,
-      redirectUri: payload.redirectUri ?? "postmessage",
-    }),
+    body: JSON.stringify(body),
   });
 }
 

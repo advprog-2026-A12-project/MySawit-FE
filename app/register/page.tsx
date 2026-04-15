@@ -12,11 +12,13 @@ const ROLES = [
   { value: "SUPIR_TRUK", label: "Supir Truk" },
 ] as const;
 
+type RegisterRole = (typeof ROLES)[number]["value"];
+
 export default function RegisterPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<string>("BURUH");
+  const [role, setRole] = useState<RegisterRole>("BURUH");
   const [mandorCertificationNumber, setMandorCertificationNumber] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<{ field: string; message: string }[]>([]);
@@ -193,7 +195,7 @@ export default function RegisterPage() {
                 id="role"
                 required
                 value={role}
-                onChange={(e) => setRole(e.target.value)}
+                onChange={(e) => setRole(e.target.value as RegisterRole)}
                 className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm text-gray-900 focus:border-green-500 focus:ring-2 focus:ring-green-200 outline-none transition bg-white"
               >
                 {ROLES.map((r) => (
@@ -254,7 +256,16 @@ export default function RegisterPage() {
             </div>
           </div>
 
-          <GoogleAuthButton label="Daftar dengan Google" onError={setError} />
+          <GoogleAuthButton
+            label="Daftar dengan Google"
+            onError={setError}
+            promptRoleOnRegister
+            registerContext={{
+              role,
+              mandorCertificationNumber:
+                role === "MANDOR" ? mandorCertificationNumber : undefined,
+            }}
+          />
 
           {/* Login link */}
           <p className="mt-6 text-center text-sm text-gray-500">
