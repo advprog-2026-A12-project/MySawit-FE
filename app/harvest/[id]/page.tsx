@@ -15,24 +15,40 @@ interface HarvestDetail {
 }
 
 export default function HarvestDetailPage() {
-    const { id } = useParams();
-    const [data, setData] = useState<HarvestDetail | null>(null);
+    const params = useParams();
+    const id =
+        typeof params?.id === "string"
+            ? params.id
+            : undefined;
+
+    const [data, setData] =
+        useState<HarvestDetail | null>(null);
+
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
-    const isRejected = data?.status === "REJECTED";
+    const isRejected =
+        data?.status === "REJECTED";
 
     useEffect(() => {
+        if (!id) return;
+
         async function fetchData() {
             setLoading(true);
             setError("");
 
             try {
-                const res = await getHarvestDetail(id as string);
+                if (!id) return;
+                const res = await getHarvestDetail(id);
+
                 setData(res);
             } catch (err) {
-                if (err instanceof Error) setError(err.message);
-                else setError("Terjadi kesalahan saat mengambil data");
+                if (err instanceof Error)
+                    setError(err.message);
+                else
+                    setError(
+                        "Terjadi kesalahan saat mengambil data"
+                    );
             } finally {
                 setLoading(false);
             }
@@ -70,49 +86,72 @@ export default function HarvestDetailPage() {
                 </h1>
 
                 <div className="space-y-4 mb-6">
+
                     <div className="flex justify-between bg-gray-100 rounded-md p-3">
-                        <span className="font-semibold">Jumlah (Kg):</span>
-                        <span>{data.kilogram}</span>
+                        <span className="font-semibold">
+                            Jumlah (Kg):
+                        </span>
+                        <span>
+                            {data.kilogram}
+                        </span>
                     </div>
 
                     <div className="flex justify-between bg-gray-100 rounded-md p-3">
-                        <span className="font-semibold">Status:</span>
-                        <span>{data.status}</span>
+                        <span className="font-semibold">
+                            Status:
+                        </span>
+                        <span>
+                            {data.status}
+                        </span>
                     </div>
 
                     <div className="flex justify-between bg-gray-100 rounded-md p-3">
-                        <span className="font-semibold">Catatan:</span>
-                        <span>{data.reportNote || "-"}</span>
+                        <span className="font-semibold">
+                            Catatan:
+                        </span>
+                        <span>
+                            {data.reportNote || "-"}
+                        </span>
                     </div>
 
-                    {isRejected && data.rejectionReason && (
-                        <div className="flex justify-between bg-red-100 rounded-md p-3 border border-red-300">
-                            <span className="font-semibold text-red-700">
-                                Alasan Ditolak:
-                            </span>
-                            <span className="text-red-700">
-                                {data.rejectionReason}
-                            </span>
-                        </div>
-                    )}
+                    {isRejected &&
+                        data.rejectionReason && (
+                            <div className="flex justify-between bg-red-100 rounded-md p-3 border border-red-300">
+                                <span className="font-semibold text-red-700">
+                                    Alasan Ditolak:
+                                </span>
+                                <span className="text-red-700">
+                                    {
+                                        data.rejectionReason
+                                    }
+                                </span>
+                            </div>
+                        )}
                 </div>
 
-                {data.photos && data.photos.length > 0 && (
-                    <div>
-                        <p className="font-semibold mb-2">Foto Panen:</p>
-                        <div className="flex flex-wrap gap-3 justify-center">
-                            {data.photos.map((url, idx) => (
-                                // eslint-disable-next-line @next/next/no-img-element
-                                <img
-                                    key={idx}
-                                    src={url}
-                                    alt={`Foto panen ${idx + 1}`}
-                                    className="w-28 h-28 object-cover rounded-lg border border-gray-300 shadow-sm"
-                                />
-                            ))}
+                {data.photos &&
+                    data.photos.length > 0 && (
+                        <div>
+                            <p className="font-semibold mb-2">
+                                Foto Panen:
+                            </p>
+
+                            <div className="flex flex-wrap gap-3 justify-center">
+                                {data.photos.map(
+                                    (url, idx) => (
+                                        <img
+                                            key={idx}
+                                            src={url}
+                                            alt={`Foto panen ${
+                                                idx + 1
+                                            }`}
+                                            className="w-28 h-28 object-cover rounded-lg border border-gray-300 shadow-sm"
+                                        />
+                                    )
+                                )}
+                            </div>
                         </div>
-                    </div>
-                )}
+                    )}
             </div>
         </div>
     );
