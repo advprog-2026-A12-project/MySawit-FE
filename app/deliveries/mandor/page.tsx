@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { getStoredUser, getUsers, UserListItem, getAccessToken } from '@/lib/auth-api';
+import { getStoredUser, UserListItem, getAccessToken } from '@/lib/auth-api';
 
 interface Delivery {
     id: string;
@@ -35,9 +35,7 @@ export default function MandorDeliveryPage() {
             const baseUrl = process.env.NEXT_PUBLIC_API_BASE || 'https://mysawit-sawit.onrender.com';
             const res = await fetch(`${baseUrl}/api/deliveries`, {
                 headers: {
-                    'Authorization': `Bearer ${getAccessToken()}`,
-                    'X-User-Id': user?.id || '',
-                    'X-User-Role': user?.role || ''
+                    'Authorization': `Bearer ${getAccessToken()}`
                 }
             });
             if (res.ok) {
@@ -49,6 +47,24 @@ export default function MandorDeliveryPage() {
         }
     }, [user?.id, user?.role]);
 
+    const fetchSupirList = useCallback(async (name?: string) => {
+        try {
+            const baseUrl = process.env.NEXT_PUBLIC_API_BASE;
+            const url = `${baseUrl}/api/supir-list${name ? `?name=${encodeURIComponent(name)}` : ''}`;
+            const res = await fetch(url, {
+                headers: {
+                    'Authorization': `Bearer ${getAccessToken()}`
+                }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setSupirList(data?.data?.content || []);
+            }
+        } catch (err) {
+            console.warn('Could not fetch supir list:', err);
+        }
+    }, [user?.id, user?.role]);
+
     useEffect(() => {
         if (!authorized) {
             router.replace('/deliveries');
@@ -57,14 +73,7 @@ export default function MandorDeliveryPage() {
 
         const loadInitialData = async () => {
             try {
-                try {
-                    const supirRes = await getUsers({ role: 'SUPIR_TRUK' });
-                    setSupirList(supirRes.data?.content || []);
-                } catch (userErr) {
-                    console.warn("Could not fetch supir list, proceeding without it.", userErr);
-                }
-
-                await fetchDeliveries();
+                await Promise.all([fetchSupirList(), fetchDeliveries()]);
             } catch {
                 setMsg({ text: "Gagal memuat data awal.", type: "error" });
             } finally {
@@ -73,18 +82,14 @@ export default function MandorDeliveryPage() {
         };
 
         loadInitialData();
-    }, [authorized, router, fetchDeliveries]);
+    }, [authorized, router, fetchSupirList, fetchDeliveries]);
 
     const handleSearchSupir = async () => {
-        try {
-            setMsg({ text: "", type: "" });
-            const supirRes = await getUsers({ role: 'SUPIR_TRUK', name: filterName });
-            setSupirList(supirRes.data?.content || []);
-        } catch (err: unknown) {
-             const statusCode = (err as { status?: number }).status;
-             setMsg({ text: statusCode === 403 ? "Anda tidak memiliki akses untuk mencari supir (Membutuhkan Admin)." : "Gagal mencari supir.", type: "error" });
-        }
+        setMsg({ text: "", type: "" });
+        await fetchSupirList(filterName);
     };
+
+
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -105,7 +110,7 @@ export default function MandorDeliveryPage() {
 
         try {
             const token = getAccessToken();
-            const baseUrl = process.env.NEXT_PUBLIC_API_BASE || 'https://mysawit-sawit.onrender.com';
+            const baseUrl = process.env.NEXT_PUBLIC_API_BASE;
             
             const reqBody = {
                 supirId: formParams.supirId,
@@ -118,10 +123,7 @@ export default function MandorDeliveryPage() {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`,
-                    'X-User-Id': user?.id || '',
-                    'X-User-Role': user?.role || '',
-                    'X-User-Name': user?.name || ''
+                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify(reqBody)
             });
@@ -174,7 +176,7 @@ export default function MandorDeliveryPage() {
                             <h2 className="text-xl font-semibold mb-4 text-gray-800 border-b pb-2 mt-8">Buat Penugasan Baru</h2>
                             <form onSubmit={handleSubmit} className="space-y-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">ID Supir</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Supir</label>
                                     {supirList.length > 0 ? (
                                         <select 
                                             required 

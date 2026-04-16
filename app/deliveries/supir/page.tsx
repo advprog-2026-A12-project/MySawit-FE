@@ -29,9 +29,7 @@ export default function SupirDeliveryPage() {
             const baseUrl = process.env.NEXT_PUBLIC_API_BASE || 'https://mysawit-sawit.onrender.com';
             const res = await fetch(`${baseUrl}/api/deliveries/supir-tasks`, {
                 headers: {
-                    'Authorization': `Bearer ${getAccessToken()}`,
-                    'X-User-Id': user?.id || '',
-                    'X-User-Role': user?.role || ''
+                    'Authorization': `Bearer ${getAccessToken()}`
                 }
             });
             if (res.ok) {
@@ -69,9 +67,7 @@ export default function SupirDeliveryPage() {
             const res = await fetch(`${baseUrl}/api/deliveries/${id}/status`, {
                 method: 'PATCH',
                 headers: {
-                    'Authorization': `Bearer ${getAccessToken()}`,
-                    'X-User-Id': user?.id || '',
-                    'X-User-Role': user?.role || ''
+                    'Authorization': `Bearer ${getAccessToken()}`
                 }
             });
 
