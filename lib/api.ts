@@ -1,6 +1,6 @@
 import {getUsers, UserProfile} from "@/lib/auth-api";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8082/api";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://mysawit-sawit.onrender.com/api";
 const AUTH_BASE = process.env.NEXT_PUBLIC_AUTH_URL || "https://mysawit-auth.onrender.com/api/v1";
 
 // ── Token helpers ──────────────────────────────────────────────

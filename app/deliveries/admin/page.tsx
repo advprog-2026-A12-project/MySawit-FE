@@ -29,7 +29,8 @@ export default function AdminDeliveryPage() {
         const fetchDeliveries = async () => {
              try {
                  const token = getAccessToken();
-                 const res = await fetch('http://localhost:8082/api/deliveries', {
+                 const baseUrl = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8082';
+                 const res = await fetch(`${baseUrl}/api/deliveries`, {
                      cache: 'no-store',
                      headers: {
                         'Authorization': `Bearer ${token}`
