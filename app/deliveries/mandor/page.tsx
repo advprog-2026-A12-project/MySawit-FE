@@ -32,7 +32,7 @@ export default function MandorDeliveryPage() {
 
     const fetchDeliveries = useCallback(async () => {
         try {
-            const baseUrl = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8082';
+            const baseUrl = process.env.NEXT_PUBLIC_API_BASE || 'https://mysawit-sawit.onrender.com';
             const res = await fetch(`${baseUrl}/api/deliveries`, {
                 headers: {
                     'Authorization': `Bearer ${getAccessToken()}`,
@@ -105,7 +105,7 @@ export default function MandorDeliveryPage() {
 
         try {
             const token = getAccessToken();
-            const baseUrl = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8082';
+            const baseUrl = process.env.NEXT_PUBLIC_API_BASE || 'https://mysawit-sawit.onrender.com';
             
             const reqBody = {
                 supirId: formParams.supirId,

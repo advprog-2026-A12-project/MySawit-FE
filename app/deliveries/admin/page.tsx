@@ -29,7 +29,7 @@ export default function AdminDeliveryPage() {
         const fetchDeliveries = async () => {
              try {
                  const token = getAccessToken();
-                 const baseUrl = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8082';
+                 const baseUrl = process.env.NEXT_PUBLIC_API_BASE || 'https://mysawit-sawit.onrender.com';
                  const res = await fetch(`${baseUrl}/api/deliveries`, {
                      cache: 'no-store',
                      headers: {

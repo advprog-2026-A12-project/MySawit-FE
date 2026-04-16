@@ -26,7 +26,7 @@ export default function SupirDeliveryPage() {
     const fetchTasks = useCallback(async () => {
         setLoading(true);
         try {
-            const baseUrl = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8082';
+            const baseUrl = process.env.NEXT_PUBLIC_API_BASE || 'https://mysawit-sawit.onrender.com';
             const res = await fetch(`${baseUrl}/api/deliveries/supir-tasks`, {
                 headers: {
                     'Authorization': `Bearer ${getAccessToken()}`,
@@ -65,7 +65,7 @@ export default function SupirDeliveryPage() {
 
         setIsUpdating(true);
         try {
-            const baseUrl = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8082';
+            const baseUrl = process.env.NEXT_PUBLIC_API_BASE || 'https://mysawit-sawit.onrender.com';
             const res = await fetch(`${baseUrl}/api/deliveries/${id}/status`, {
                 method: 'PATCH',
                 headers: {
