@@ -134,10 +134,6 @@ export async function getMyHarvest(params?: {
 // =========================
 // MANDOR: GET BAWAHAN
 // =========================
-// ⚠️ IMPORTANT:
-// mandorId TIDAK dikirim dari frontend
-// karena backend ambil dari JWT → AuthClient (/users/me)
-
 export async function getPanenBawahan(params?: {
     buruhId?: string;
     tanggalPanen?: string;
@@ -152,6 +148,26 @@ export async function getPanenBawahan(params?: {
 
     return fetcher(
         `${API_BASE}/harvest/bawahan${query ? `?${query}` : ""}`
+    );
+}
+
+// =========================
+// MANDOR: GET BURUH LIST
+// =========================
+export async function getMandorBuruhs(
+    mandorId: string,
+    params?: { page?: number; size?: number; name?: string }
+) {
+    const cleanParams = Object.fromEntries(
+        Object.entries(params || {}).filter(
+            ([_, v]) => v !== "" && v !== undefined
+        )
+    ) as Record<string, string>;
+
+    const query = new URLSearchParams(cleanParams).toString();
+
+    return fetcher(
+        `${AUTH_BASE}/mandors/${mandorId}/buruhs${query ? `?${query}` : ""}`
     );
 }
 

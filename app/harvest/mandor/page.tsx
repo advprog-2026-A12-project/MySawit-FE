@@ -4,7 +4,9 @@ import { useEffect, useState } from "react";
 import {
     getPanenBawahan,
     approvePanen,
-    rejectPanen
+    rejectPanen,
+    getMandorBuruhs,
+    getUser
 } from "@/lib/api";
 
 import { useRouter } from "next/navigation";
@@ -22,11 +24,18 @@ type Harvest = {
     bisaDiangkutTruk?: boolean;
 };
 
+// Tipe baru untuk dropdown buruh
+type Buruh = {
+    id: string;
+    name: string;
+};
+
 // =========================
 // PAGE
 // =========================
 export default function MandorPage() {
     const [data, setData] = useState<Harvest[]>([]);
+    const [buruhList, setBuruhList] = useState<Buruh[]>([]);
     const [loading, setLoading] = useState(true);
 
     const [buruhId, setBuruhId] = useState("");
@@ -41,7 +50,7 @@ export default function MandorPage() {
     const router = useRouter();
 
     // =========================
-    // FETCH DATA
+    // FETCH DATA PANEN
     // =========================
     const fetchData = async () => {
         setLoading(true);
@@ -65,9 +74,27 @@ export default function MandorPage() {
     };
 
     // =========================
+    // FETCH DATA BURUH
+    // =========================
+    const fetchBuruhOptions = async () => {
+        const user = getUser();
+        if (!user?.id) return;
+
+        try {
+            const res = await getMandorBuruhs(user.id, { size: 100 });
+            if (res?.data?.content) {
+                setBuruhList(res.data.content);
+            }
+        } catch (err) {
+            console.error("Failed to fetch buruh list:", err);
+        }
+    };
+
+    // =========================
     // INIT LOAD
     // =========================
     useEffect(() => {
+        fetchBuruhOptions();
         fetchData();
     }, []);
 
@@ -158,16 +185,21 @@ export default function MandorPage() {
 
                 <div className="flex flex-col w-full md:w-auto">
                     <label className="text-sm font-semibold mb-1">
-                        Filter Buruh ID
+                        Filter Buruh
                     </label>
 
-                    <input
-                        type="text"
+                    <select
                         value={buruhId}
                         onChange={(e) => setBuruhId(e.target.value)}
-                        placeholder="UUID buruh (opsional)"
                         className="border rounded p-2 bg-white w-72"
-                    />
+                    >
+                        <option value="">Semua Buruh</option>
+                        {buruhList.map((b) => (
+                            <option key={b.id} value={b.id}>
+                                {b.name}
+                            </option>
+                        ))}
+                    </select>
                 </div>
 
                 <div className="flex flex-col w-full md:w-auto">
@@ -261,9 +293,16 @@ export default function MandorPage() {
                 </div>
             )}
 
-            {/* SUMMARY */}
-            {!loading && data.length > 0 && (
-                <div className="grid grid-cols-3 gap-4 mb-6">
+            {/* SUMMARY (Dengan tambahan Total Buruh) */}
+            {!loading && (
+                <div className="grid grid-cols-4 gap-4 mb-6">
+
+                    <div className="bg-blue-50 p-3 rounded text-center">
+                        <p className="text-2xl font-bold text-blue-600">
+                            {buruhList.length}
+                        </p>
+                        <p>Total Buruh</p>
+                    </div>
 
                     <div className="bg-yellow-50 p-3 rounded text-center">
                         <p className="text-2xl font-bold text-yellow-600">
@@ -299,64 +338,65 @@ export default function MandorPage() {
             ) : (
                 <div className="grid gap-4">
 
-                    {data.map((item) => (
-                        <div
-                            key={item.id}
-                            className="bg-white border shadow-sm p-4 rounded-lg"
-                        >
-                            <div className="flex justify-between">
+                    {data.map((item) => {
+                        // Mencari nama buruh untuk ditampilkan, fallback ke ID jika belum ditarik
+                        const buruhName = buruhList.find(b => b.id === item.buruhId)?.name || item.buruhId;
 
-                                <div className="flex-1">
+                        return (
+                            <div
+                                key={item.id}
+                                className="bg-white border shadow-sm p-4 rounded-lg"
+                            >
+                                <div className="flex justify-between">
 
-                                    <span
-                                        className={`text-xs px-2 py-1 rounded ${statusBadge(
-                                            item.status
-                                        )}`}
-                                    >
-                                        {item.status}
-                                    </span>
+                                    <div className="flex-1">
 
-                                    <p>Buruh: {item.buruhId}</p>
-                                    <p>Tanggal: {item.harvestDate}</p>
-                                    <p>Kg: {item.kilogram}</p>
+                                        <span
+                                            className={`text-xs px-2 py-1 rounded ${statusBadge(
+                                                item.status
+                                            )}`}
+                                        >
+                                            {item.status}
+                                        </span>
 
-                                    {item.rejectionReason && (
-                                        <p className="text-red-600 text-sm">
-                                            {item.rejectionReason}
-                                        </p>
+                                        <p className="font-semibold mt-2">Buruh: {buruhName}</p>
+                                        <p className="text-sm text-gray-600">Tanggal: {item.harvestDate}</p>
+                                        <p className="text-sm text-gray-600">Kg: {item.kilogram}</p>
+
+                                        {item.rejectionReason && (
+                                            <p className="text-red-600 text-sm mt-1">
+                                                Alasan: {item.rejectionReason}
+                                            </p>
+                                        )}
+
+                                    </div>
+
+                                    {item.status === "PENDING" && (
+                                        <div className="flex flex-col gap-2 justify-center">
+
+                                            <button
+                                                onClick={() => handleApprove(item.id)}
+                                                disabled={actionLoading}
+                                                className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm transition-colors"
+                                            >
+                                                Approve
+                                            </button>
+
+                                            <button
+                                                onClick={() => setRejectId(item.id)}
+                                                disabled={actionLoading}
+                                                className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition-colors"
+                                            >
+                                                Reject
+                                            </button>
+
+                                        </div>
                                     )}
 
                                 </div>
-
-                                {item.status === "PENDING" && (
-                                    <div className="flex flex-col gap-2">
-
-                                        <button
-                                            onClick={() =>
-                                                handleApprove(item.id)
-                                            }
-                                            disabled={actionLoading}
-                                            className="bg-green-500 text-white px-3 py-1 rounded"
-                                        >
-                                            Approve
-                                        </button>
-
-                                        <button
-                                            onClick={() =>
-                                                setRejectId(item.id)
-                                            }
-                                            disabled={actionLoading}
-                                            className="bg-red-500 text-white px-3 py-1 rounded"
-                                        >
-                                            Reject
-                                        </button>
-
-                                    </div>
-                                )}
-
                             </div>
-                        </div>
-                    ))}
+                        );
+                    })}
 
                 </div>
             )}
