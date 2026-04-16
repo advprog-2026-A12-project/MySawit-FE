@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { getStoredUser, getAccessToken } from '@/lib/auth-api';
 
@@ -23,15 +23,7 @@ export default function SupirDeliveryPage() {
     const [msg, setMsg] = useState({ text: "", type: "" });
     const [isUpdating, setIsUpdating] = useState(false);
 
-    useEffect(() => {
-        if (!authorized) {
-            router.replace('/deliveries');
-            return;
-        }
-        fetchTasks();
-    }, [authorized, router]);
-
-    const fetchTasks = async () => {
+    const fetchTasks = useCallback(async () => {
         setLoading(true);
         try {
             const baseUrl = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8082';
@@ -48,12 +40,20 @@ export default function SupirDeliveryPage() {
             } else {
                 throw new Error("Gagal mengambil data tugas");
             }
-        } catch (error: any) {
-            setMsg({ text: error.message || "Gagal terhubung ke backend", type: "error" });
+        } catch (error: unknown) {
+            setMsg({ text: error instanceof Error ? error.message : "Gagal terhubung ke backend", type: "error" });
         } finally {
             setLoading(false);
         }
-    };
+    }, [user?.id, user?.role]);
+
+    useEffect(() => {
+        if (!authorized) {
+            router.replace('/deliveries');
+            return;
+        }
+        fetchTasks();
+    }, [authorized, router, fetchTasks]);
 
     const handleUpdateStatus = async (id: string, currentStatus: string) => {
         if (isUpdating) return;
@@ -82,8 +82,8 @@ export default function SupirDeliveryPage() {
 
             setMsg({ text: "Status berhasil diupdate!", type: "success" });
             fetchTasks();
-        } catch (error: any) {
-            setMsg({ text: error.message || "Terjadi kesalahan", type: "error" });
+        } catch (error: unknown) {
+            setMsg({ text: error instanceof Error ? error.message : "Terjadi kesalahan", type: "error" });
         } finally {
             setIsUpdating(false);
         }

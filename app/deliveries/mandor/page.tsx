@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { getStoredUser, getUsers, UserListItem, getAccessToken } from '@/lib/auth-api';
 
@@ -30,33 +30,7 @@ export default function MandorDeliveryPage() {
         payloadKg: ""
     });
 
-    useEffect(() => {
-        if (!authorized) {
-            router.replace('/deliveries');
-            return;
-        }
-
-        const loadInitialData = async () => {
-            try {
-                try {
-                    const supirRes = await getUsers({ role: 'SUPIR_TRUK' });
-                    setSupirList(supirRes.data?.content || []);
-                } catch (userErr) {
-                    console.warn("Could not fetch supir list, proceeding without it.", userErr);
-                }
-
-                await fetchDeliveries();
-            } catch (err) {
-                setMsg({ text: "Gagal memuat data awal.", type: "error" });
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        loadInitialData();
-    }, [authorized, router]);
-
-    const fetchDeliveries = async () => {
+    const fetchDeliveries = useCallback(async () => {
         try {
             const baseUrl = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8082';
             const res = await fetch(`${baseUrl}/api/deliveries`, {
@@ -73,15 +47,42 @@ export default function MandorDeliveryPage() {
         } catch (error) {
             console.error("Gagal mendapatkan daftar pengiriman", error);
         }
-    };
+    }, [user?.id, user?.role]);
+
+    useEffect(() => {
+        if (!authorized) {
+            router.replace('/deliveries');
+            return;
+        }
+
+        const loadInitialData = async () => {
+            try {
+                try {
+                    const supirRes = await getUsers({ role: 'SUPIR_TRUK' });
+                    setSupirList(supirRes.data?.content || []);
+                } catch (userErr) {
+                    console.warn("Could not fetch supir list, proceeding without it.", userErr);
+                }
+
+                await fetchDeliveries();
+            } catch {
+                setMsg({ text: "Gagal memuat data awal.", type: "error" });
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        loadInitialData();
+    }, [authorized, router, fetchDeliveries]);
 
     const handleSearchSupir = async () => {
         try {
             setMsg({ text: "", type: "" });
             const supirRes = await getUsers({ role: 'SUPIR_TRUK', name: filterName });
             setSupirList(supirRes.data?.content || []);
-        } catch (err: any) {
-             setMsg({ text: err.status === 403 ? "Anda tidak memiliki akses untuk mencari supir (Membutuhkan Admin)." : "Gagal mencari supir.", type: "error" });
+        } catch (err: unknown) {
+             const statusCode = (err as { status?: number }).status;
+             setMsg({ text: statusCode === 403 ? "Anda tidak memiliki akses untuk mencari supir (Membutuhkan Admin)." : "Gagal mencari supir.", type: "error" });
         }
     };
 
@@ -132,9 +133,9 @@ export default function MandorDeliveryPage() {
 
             setMsg({ text: "Berhasil menugaskan pengiriman!", type: "success" });
             setFormParams({ ...formParams, payloadKg: "", supirId: "" });
-            fetchDeliveries(); // refresh list
-        } catch (error: any) {
-             setMsg({ text: error.message || "Gagal menghubungi server", type: "error" });
+            fetchDeliveries();
+        } catch (error: unknown) {
+             setMsg({ text: error instanceof Error ? error.message : "Gagal menghubungi server", type: "error" });
         }
     };
 
