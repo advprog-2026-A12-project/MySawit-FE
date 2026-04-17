@@ -1,12 +1,39 @@
-import {getUsers, UserProfile} from "@/lib/auth-api";
+import { login as authLogin, persistAuthSession, UserProfile } from "@/lib/auth-api";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://mysawit-sawit.onrender.com/api";
-const AUTH_BASE = process.env.NEXT_PUBLIC_AUTH_URL || "https://mysawit-auth.onrender.com/api/v1";
+// =========================
+// BASE CONFIG
+// =========================
+const isLocal =
+    typeof window !== "undefined" &&
+    window.location.hostname === "localhost";
 
-// ── Token helpers ──────────────────────────────────────────────
+const API_BASE = isLocal
+    ? "http://localhost:8082/api"
+    : "https://mysawit-sawit.onrender.com/api";
+
+const AUTH_BASE =
+    process.env.NEXT_PUBLIC_AUTH_URL ||
+    "https://mysawit-auth.onrender.com/api/v1";
+
+// =========================
+// HELPER
+// =========================
+function cleanObject(params?: Record<string, string | number | undefined>) {
+    return Object.fromEntries(
+        Object.entries(params || {}).filter(
+            ([, v]) => v !== "" && v !== undefined
+        )
+    ) as Record<string, string>;
+}
+
+// =========================
+// TOKEN HELPERS
+// =========================
 export function getToken(): string | null {
+    if (typeof window === "undefined") return null;
     return localStorage.getItem("accessToken");
 }
+
 export function getUser(): UserProfile | null {
     if (typeof window === "undefined") return null;
 
@@ -20,11 +47,13 @@ export function getUser(): UserProfile | null {
     }
 }
 
-// ── Base fetcher ───────────────────────────────────────────────
+// =========================
+// BASE FETCHER (JSON)
+// =========================
 async function fetcher(url: string, options?: RequestInit) {
     const token = getToken();
 
-    const response = await fetch(url, {
+    const res = await fetch(url, {
         ...options,
         headers: {
             "Content-Type": "application/json",
@@ -33,19 +62,21 @@ async function fetcher(url: string, options?: RequestInit) {
         },
     });
 
-    if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || "Something went wrong");
+    if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(errText || "Request failed");
     }
 
-    return response.json();
+    return res.json();
 }
 
-// Fetcher khusus multipart (tidak set Content-Type, biar browser set boundary)
+// =========================
+// MULTIPART FETCHER
+// =========================
 async function fetcherMultipart(url: string, formData: FormData) {
     const token = getToken();
 
-    const response = await fetch(url, {
+    const res = await fetch(url, {
         method: "POST",
         headers: {
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -53,24 +84,26 @@ async function fetcherMultipart(url: string, formData: FormData) {
         body: formData,
     });
 
-    if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
-        throw new Error(errData.error || "Terjadi kesalahan saat submit");
+    if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || "Upload gagal");
     }
 
-    return response.json();
+    return res.json();
 }
 
-// ── Auth ───────────────────────────────────────────────────────
-import { login as authLogin, persistAuthSession } from "@/lib/auth-api";
-
+// =========================
+// AUTH LOGIN
+// =========================
 export async function login(email: string, password: string) {
     const res = await authLogin({ email, password });
-
-    persistAuthSession(res.data); // simpan token + user
+    persistAuthSession(res.data);
     return res;
 }
-// ── BURUH: Submit panen (dengan foto) ─────────────────────────
+
+// =========================
+// BURUH: SUBMIT HARVEST
+// =========================
 export async function submitHarvest(params: {
     kilogram: number;
     reportNote: string;
@@ -79,46 +112,60 @@ export async function submitHarvest(params: {
     const formData = new FormData();
     formData.append("kilogram", params.kilogram.toString());
     formData.append("reportNote", params.reportNote);
-    params.photos?.forEach((photo) => formData.append("photos", photo));
+
+    params.photos?.forEach((p) => {
+        formData.append("photos", p);
+    });
 
     return fetcherMultipart(`${API_BASE}/harvest`, formData);
 }
 
-// ── BURUH: Lihat panen sendiri ─────────────────────────────────
+// =========================
+// BURUH: MY HARVEST
+// =========================
 export async function getMyHarvest(params?: {
     startDate?: string;
     endDate?: string;
     status?: string;
 }) {
-    const cleanParams = Object.fromEntries(
-        Object.entries(params || {}).filter(([_, v]) => v !== "" && v !== undefined)
-    ) as Record<string, string>;
-
-    const query = new URLSearchParams(cleanParams).toString();
+    const query = new URLSearchParams(cleanObject(params)).toString();
     return fetcher(`${API_BASE}/harvest/my${query ? `?${query}` : ""}`);
 }
 
-// ── MANDOR: Lihat panen bawahan ────────────────────────────────
+// =========================
+// MANDOR: GET BAWAHAN
+// =========================
 export async function getPanenBawahan(params?: {
     buruhId?: string;
     tanggalPanen?: string;
 }) {
-    const cleanParams = Object.fromEntries(
-        Object.entries(params || {}).filter(([_, v]) => v !== "" && v !== undefined)
-    ) as Record<string, string>;
-
-    const query = new URLSearchParams(cleanParams).toString();
+    const query = new URLSearchParams(cleanObject(params)).toString();
     return fetcher(`${API_BASE}/harvest/bawahan${query ? `?${query}` : ""}`);
 }
 
-// ── MANDOR: Approve ────────────────────────────────────────────
+// =========================
+// MANDOR: GET BURUH LIST
+// =========================
+export async function getMandorBuruhs(
+    mandorId: string,
+    params?: { page?: number; size?: number; name?: string }
+) {
+    const query = new URLSearchParams(cleanObject(params as Record<string, string>)).toString();
+    return fetcher(`${AUTH_BASE}/mandors/${mandorId}/buruhs${query ? `?${query}` : ""}`);
+}
+
+// =========================
+// MANDOR: APPROVE
+// =========================
 export async function approvePanen(id: string) {
     return fetcher(`${API_BASE}/harvest/${id}/approve`, {
         method: "PATCH",
     });
 }
 
-// ── MANDOR: Reject ─────────────────────────────────────────────
+// =========================
+// MANDOR: REJECT
+// =========================
 export async function rejectPanen(id: string, rejectionReason: string) {
     return fetcher(`${API_BASE}/harvest/${id}/reject`, {
         method: "PATCH",
@@ -126,12 +173,19 @@ export async function rejectPanen(id: string, rejectionReason: string) {
     });
 }
 
-// ── Detail & Delete ────────────────────────────────────────────
+// =========================
+// DETAIL HARVEST
+// =========================
 export async function getHarvestDetail(id: string) {
     return fetcher(`${API_BASE}/harvest/${id}`);
 }
 
+// =========================
+// DELETE HARVEST
+// =========================
 export async function deleteHarvest(id: string) {
-    await fetcher(`${API_BASE}/harvest/${id}`, { method: "DELETE" });
+    await fetcher(`${API_BASE}/harvest/${id}`, {
+        method: "DELETE",
+    });
     return true;
 }
