@@ -16,9 +16,21 @@ const AUTH_BASE =
     "https://mysawit-auth.onrender.com/api/v1";
 
 // =========================
+// HELPER
+// =========================
+function cleanObject(params?: Record<string, string | number | undefined>) {
+    return Object.fromEntries(
+        Object.entries(params || {}).filter(
+            ([, v]) => v !== "" && v !== undefined
+        )
+    ) as Record<string, string>;
+}
+
+// =========================
 // TOKEN HELPERS
 // =========================
 export function getToken(): string | null {
+    if (typeof window === "undefined") return null;
     return localStorage.getItem("accessToken");
 }
 
@@ -85,7 +97,6 @@ async function fetcherMultipart(url: string, formData: FormData) {
 // =========================
 export async function login(email: string, password: string) {
     const res = await authLogin({ email, password });
-
     persistAuthSession(res.data);
     return res;
 }
@@ -99,7 +110,6 @@ export async function submitHarvest(params: {
     photos?: File[];
 }) {
     const formData = new FormData();
-
     formData.append("kilogram", params.kilogram.toString());
     formData.append("reportNote", params.reportNote);
 
@@ -118,17 +128,8 @@ export async function getMyHarvest(params?: {
     endDate?: string;
     status?: string;
 }) {
-    const cleanParams = Object.fromEntries(
-        Object.entries(params || {}).filter(
-            ([_, v]) => v !== "" && v !== undefined
-        )
-    ) as Record<string, string>;
-
-    const query = new URLSearchParams(cleanParams).toString();
-
-    return fetcher(
-        `${API_BASE}/harvest/my${query ? `?${query}` : ""}`
-    );
+    const query = new URLSearchParams(cleanObject(params)).toString();
+    return fetcher(`${API_BASE}/harvest/my${query ? `?${query}` : ""}`);
 }
 
 // =========================
@@ -138,17 +139,8 @@ export async function getPanenBawahan(params?: {
     buruhId?: string;
     tanggalPanen?: string;
 }) {
-    const cleanParams = Object.fromEntries(
-        Object.entries(params || {}).filter(
-            ([_, v]) => v !== "" && v !== undefined
-        )
-    ) as Record<string, string>;
-
-    const query = new URLSearchParams(cleanParams).toString();
-
-    return fetcher(
-        `${API_BASE}/harvest/bawahan${query ? `?${query}` : ""}`
-    );
+    const query = new URLSearchParams(cleanObject(params)).toString();
+    return fetcher(`${API_BASE}/harvest/bawahan${query ? `?${query}` : ""}`);
 }
 
 // =========================
@@ -158,17 +150,8 @@ export async function getMandorBuruhs(
     mandorId: string,
     params?: { page?: number; size?: number; name?: string }
 ) {
-    const cleanParams = Object.fromEntries(
-        Object.entries(params || {}).filter(
-            ([_, v]) => v !== "" && v !== undefined
-        )
-    ) as Record<string, string>;
-
-    const query = new URLSearchParams(cleanParams).toString();
-
-    return fetcher(
-        `${AUTH_BASE}/mandors/${mandorId}/buruhs${query ? `?${query}` : ""}`
-    );
+    const query = new URLSearchParams(cleanObject(params as Record<string, string>)).toString();
+    return fetcher(`${AUTH_BASE}/mandors/${mandorId}/buruhs${query ? `?${query}` : ""}`);
 }
 
 // =========================
@@ -183,10 +166,7 @@ export async function approvePanen(id: string) {
 // =========================
 // MANDOR: REJECT
 // =========================
-export async function rejectPanen(
-    id: string,
-    rejectionReason: string
-) {
+export async function rejectPanen(id: string, rejectionReason: string) {
     return fetcher(`${API_BASE}/harvest/${id}/reject`, {
         method: "PATCH",
         body: JSON.stringify({ rejectionReason }),
@@ -207,6 +187,5 @@ export async function deleteHarvest(id: string) {
     await fetcher(`${API_BASE}/harvest/${id}`, {
         method: "DELETE",
     });
-
     return true;
 }

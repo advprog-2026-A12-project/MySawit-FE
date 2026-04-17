@@ -1,12 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import {
-    getMyHarvest,
-    deleteHarvest,
-    getUser
-} from "@/lib/api";
-
+import { useEffect, useState, useCallback } from "react";
+import { getMyHarvest, deleteHarvest, getUser } from "@/lib/api";
+import { UserProfile } from "@/lib/auth-api"; // Import tipe profil
 import { useRouter } from "next/navigation";
 
 type Harvest = {
@@ -26,7 +22,7 @@ export default function HarvestPage() {
     const [status, setStatus] = useState("");
 
     const router = useRouter();
-    const [user, setUser] = useState<any>(null);
+    const [user, setUser] = useState<UserProfile | null>(null);
 
     useEffect(() => {
         setUser(getUser());
@@ -34,19 +30,15 @@ export default function HarvestPage() {
 
     const isMandor = user?.role === "MANDOR";
 
-    // =========================
-    // FETCH
-    // =========================
-    const fetchHarvests = async () => {
+    // Dibungkus useCallback agar aman dimasukkan ke dependency useEffect
+    const fetchHarvests = useCallback(async () => {
         setLoading(true);
-
         try {
             const res = await getMyHarvest({
                 startDate,
                 endDate,
                 status,
             });
-
             const result = Array.isArray(res) ? res : res?.data;
             setData(result || []);
         } catch (error) {
@@ -55,11 +47,8 @@ export default function HarvestPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [startDate, endDate, status]);
 
-    // =========================
-    // INIT
-    // =========================
     useEffect(() => {
         if (user === null) return;
 
@@ -69,11 +58,8 @@ export default function HarvestPage() {
         }
 
         fetchHarvests();
-    }, [user]);
+    }, [user, isMandor, router, fetchHarvests]);
 
-    // =========================
-    // DELETE
-    // =========================
     const handleDelete = async (e: React.MouseEvent, id: string) => {
         e.preventDefault();
         e.stopPropagation();
@@ -84,14 +70,11 @@ export default function HarvestPage() {
             await deleteHarvest(id);
             alert("Laporan berhasil dihapus!");
             fetchHarvests();
-        } catch (error) {
+        } catch {
             alert("Gagal menghapus data.");
         }
     };
 
-    // =========================
-    // UI HELPERS
-    // =========================
     const renderStatusBadge = (s: string) => {
         if (s === "APPROVED") {
             return <span className="inline-flex rounded-full bg-green-100 px-2 py-1 text-xs font-semibold text-green-800 border border-green-200">APPROVED</span>;
@@ -106,7 +89,6 @@ export default function HarvestPage() {
         <main className="min-h-screen bg-gray-50 p-8 text-black font-sans">
             <div className="mx-auto max-w-6xl">
 
-                {/* HEADER */}
                 <div className="mb-8 flex items-center justify-between">
                     <div>
                         <h1 className="text-3xl font-bold text-blue-900">Riwayat Panen</h1>

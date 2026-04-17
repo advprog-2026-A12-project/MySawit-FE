@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
     getPanenBawahan,
     approvePanen,
@@ -8,7 +8,7 @@ import {
     getMandorBuruhs,
     getUser
 } from "@/lib/api";
-
+import { UserProfile } from "@/lib/auth-api";
 import { useRouter } from "next/navigation";
 
 // =========================
@@ -51,7 +51,7 @@ export default function MandorPage() {
     // =========================
     // FETCH DATA PANEN
     // =========================
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         setLoading(true);
         setActionMsg("");
 
@@ -69,13 +69,13 @@ export default function MandorPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [buruhId, tanggalPanen]);
 
     // =========================
     // FETCH DATA BURUH
     // =========================
-    const fetchBuruhOptions = async () => {
-        const user = getUser();
+    const fetchBuruhOptions = useCallback(async () => {
+        const user = getUser() as UserProfile | null;
         if (!user?.id) return;
 
         try {
@@ -86,7 +86,7 @@ export default function MandorPage() {
         } catch (err) {
             console.error("Failed to fetch buruh list:", err);
         }
-    };
+    }, []);
 
     // =========================
     // INIT LOAD
@@ -94,7 +94,7 @@ export default function MandorPage() {
     useEffect(() => {
         fetchBuruhOptions();
         fetchData();
-    }, []);
+    }, [fetchBuruhOptions, fetchData]);
 
     // =========================
     // APPROVE
@@ -151,24 +151,18 @@ export default function MandorPage() {
         }
     };
 
-    // =========================
-    // STATUS STYLE
-    // =========================
     const renderStatusBadge = (status: string) => {
         if (status === "APPROVED") {
-            return <span className="inline-flex rounded-full bg-green-100 px-2 py-1 text-xs font-semibold text-green-800">APPROVED</span>;
+            return <span className="inline-flex rounded-full bg-green-100 px-2 py-1 text-xs font-semibold text-green-800 border border-green-200">APPROVED</span>;
         }
         if (status === "REJECTED") {
-            return <span className="inline-flex rounded-full bg-red-100 px-2 py-1 text-xs font-semibold text-red-800">REJECTED</span>;
+            return <span className="inline-flex rounded-full bg-red-100 px-2 py-1 text-xs font-semibold text-red-800 border border-red-200">REJECTED</span>;
         }
-        return <span className="inline-flex rounded-full bg-yellow-100 px-2 py-1 text-xs font-semibold text-yellow-800">PENDING</span>;
+        return <span className="inline-flex rounded-full bg-yellow-100 px-2 py-1 text-xs font-semibold text-yellow-800 border border-yellow-200">PENDING</span>;
     };
 
-    // =========================
-    // UI
-    // =========================
     return (
-        <main className="min-h-screen bg-gray-50 p-8 text-black">
+        <main className="min-h-screen bg-gray-50 p-8 text-black font-sans">
             <div className="mx-auto max-w-6xl">
 
                 {/* HEADER */}
@@ -187,19 +181,19 @@ export default function MandorPage() {
                 {/* SUMMARY CARDS */}
                 {!loading && (
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                        <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow p-4">
+                        <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow p-4 text-center">
                             <p className="text-sm font-semibold text-gray-500 uppercase">Total Buruh</p>
                             <p className="text-2xl font-bold text-blue-900 mt-1">{buruhList.length}</p>
                         </div>
-                        <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow p-4">
+                        <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow p-4 text-center">
                             <p className="text-sm font-semibold text-gray-500 uppercase">Menunggu</p>
                             <p className="text-2xl font-bold text-yellow-600 mt-1">{data.filter(d => d.status === "PENDING").length}</p>
                         </div>
-                        <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow p-4">
+                        <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow p-4 text-center">
                             <p className="text-sm font-semibold text-gray-500 uppercase">Disetujui</p>
                             <p className="text-2xl font-bold text-green-600 mt-1">{data.filter(d => d.status === "APPROVED").length}</p>
                         </div>
-                        <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow p-4">
+                        <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow p-4 text-center">
                             <p className="text-sm font-semibold text-gray-500 uppercase">Ditolak</p>
                             <p className="text-2xl font-bold text-red-600 mt-1">{data.filter(d => d.status === "REJECTED").length}</p>
                         </div>
@@ -218,7 +212,7 @@ export default function MandorPage() {
                             <select
                                 value={buruhId}
                                 onChange={(e) => setBuruhId(e.target.value)}
-                                className="border border-gray-300 rounded p-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 md:w-64"
+                                className="border border-gray-300 rounded p-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 md:w-64 bg-white"
                             >
                                 <option value="">Semua Buruh</option>
                                 {buruhList.map((b) => (
@@ -235,7 +229,7 @@ export default function MandorPage() {
                                 type="date"
                                 value={tanggalPanen}
                                 onChange={(e) => setTanggalPanen(e.target.value)}
-                                className="border border-gray-300 rounded p-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                className="border border-gray-300 rounded p-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
                             />
                         </div>
 
@@ -250,7 +244,6 @@ export default function MandorPage() {
                                 onClick={() => {
                                     setBuruhId("");
                                     setTanggalPanen("");
-                                    setTimeout(fetchData, 0);
                                 }}
                                 className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded text-sm hover:bg-gray-50 transition-colors"
                             >
@@ -277,13 +270,13 @@ export default function MandorPage() {
 
                     <div className="overflow-x-auto">
                         <table className="min-w-full divide-y divide-gray-200">
-                            <thead className="bg-gray-50">
+                            <thead className="bg-gray-50 text-gray-500">
                             <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Tanggal</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Nama Buruh</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Berat (Kg)</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Status</th>
-                                <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Aksi</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Tanggal</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Nama Buruh</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Berat (Kg)</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Status</th>
+                                <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider">Aksi</th>
                             </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-200 bg-white">
@@ -321,7 +314,7 @@ export default function MandorPage() {
                                                 <div className="flex justify-end gap-3">
                                                     <button
                                                         onClick={() => router.push(`/harvest/${item.id}`)}
-                                                        className="text-blue-600 hover:text-blue-900 transition-colors"
+                                                        className="text-blue-600 hover:text-blue-900 font-bold"
                                                     >
                                                         Detail
                                                     </button>
@@ -331,14 +324,14 @@ export default function MandorPage() {
                                                             <button
                                                                 onClick={() => handleApprove(item.id)}
                                                                 disabled={actionLoading}
-                                                                className="text-green-600 hover:text-green-900 transition-colors disabled:opacity-50"
+                                                                className="text-green-600 hover:text-green-900 font-bold disabled:opacity-50"
                                                             >
                                                                 Approve
                                                             </button>
                                                             <button
                                                                 onClick={() => setRejectId(item.id)}
                                                                 disabled={actionLoading}
-                                                                className="text-red-600 hover:text-red-900 transition-colors disabled:opacity-50"
+                                                                className="text-red-600 hover:text-red-900 font-bold disabled:opacity-50"
                                                             >
                                                                 Reject
                                                             </button>
@@ -369,7 +362,7 @@ export default function MandorPage() {
                                 <textarea
                                     value={alasan}
                                     onChange={(e) => setAlasan(e.target.value)}
-                                    className="w-full border border-gray-300 rounded p-3 mb-4 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                    className="w-full border border-gray-300 rounded p-3 mb-4 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
                                     rows={3}
                                     placeholder="Masukkan alasan penolakan..."
                                 />
