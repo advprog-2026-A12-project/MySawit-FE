@@ -24,7 +24,6 @@ type Harvest = {
     bisaDiangkutTruk?: boolean;
 };
 
-// Tipe baru untuk dropdown buruh
 type Buruh = {
     id: string;
     name: string;
@@ -63,7 +62,6 @@ export default function MandorPage() {
             });
 
             const result = Array.isArray(res) ? res : res?.data;
-
             setData(result || []);
         } catch (err) {
             console.error("Fetch error:", err);
@@ -156,250 +154,248 @@ export default function MandorPage() {
     // =========================
     // STATUS STYLE
     // =========================
-    const statusBadge = (s: string) => {
-        if (s === "APPROVED") return "bg-green-100 text-green-700";
-        if (s === "REJECTED") return "bg-red-100 text-red-700";
-        return "bg-yellow-100 text-yellow-700";
+    const renderStatusBadge = (status: string) => {
+        if (status === "APPROVED") {
+            return <span className="inline-flex rounded-full bg-green-100 px-2 py-1 text-xs font-semibold text-green-800">APPROVED</span>;
+        }
+        if (status === "REJECTED") {
+            return <span className="inline-flex rounded-full bg-red-100 px-2 py-1 text-xs font-semibold text-red-800">REJECTED</span>;
+        }
+        return <span className="inline-flex rounded-full bg-yellow-100 px-2 py-1 text-xs font-semibold text-yellow-800">PENDING</span>;
     };
 
     // =========================
     // UI
     // =========================
     return (
-        <div className="p-6 bg-gray-50 min-h-screen text-black">
+        <main className="min-h-screen bg-gray-50 p-8 text-black">
+            <div className="mx-auto max-w-6xl">
 
-            {/* HEADER */}
-            <div className="flex justify-between items-center mb-6">
-                <h1 className="text-3xl font-bold">Dashboard Mandor</h1>
-
-                <button
-                    onClick={() => router.push("/")}
-                    className="text-sm text-gray-500 hover:underline"
-                >
-                    ← Kembali
-                </button>
-            </div>
-
-            {/* FILTER */}
-            <div className="bg-white p-4 rounded-lg shadow-sm mb-6 flex flex-col md:flex-row gap-4 items-end">
-
-                <div className="flex flex-col w-full md:w-auto">
-                    <label className="text-sm font-semibold mb-1">
-                        Filter Buruh
-                    </label>
-
-                    <select
-                        value={buruhId}
-                        onChange={(e) => setBuruhId(e.target.value)}
-                        className="border rounded p-2 bg-white w-72"
+                {/* HEADER */}
+                <div className="mb-8 flex items-center justify-between">
+                    <div>
+                        <h1 className="text-3xl font-bold text-blue-900">Dashboard Mandor</h1>
+                    </div>
+                    <button
+                        onClick={() => router.push("/")}
+                        className="text-sm text-gray-500 hover:text-gray-900 hover:underline transition-colors"
                     >
-                        <option value="">Semua Buruh</option>
-                        {buruhList.map((b) => (
-                            <option key={b.id} value={b.id}>
-                                {b.name}
-                            </option>
-                        ))}
-                    </select>
+                        ← Kembali
+                    </button>
                 </div>
 
-                <div className="flex flex-col w-full md:w-auto">
-                    <label className="text-sm font-semibold mb-1">
-                        Tanggal Panen
-                    </label>
+                {/* SUMMARY CARDS */}
+                {!loading && (
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                        <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow p-4">
+                            <p className="text-sm font-semibold text-gray-500 uppercase">Total Buruh</p>
+                            <p className="text-2xl font-bold text-blue-900 mt-1">{buruhList.length}</p>
+                        </div>
+                        <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow p-4">
+                            <p className="text-sm font-semibold text-gray-500 uppercase">Menunggu</p>
+                            <p className="text-2xl font-bold text-yellow-600 mt-1">{data.filter(d => d.status === "PENDING").length}</p>
+                        </div>
+                        <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow p-4">
+                            <p className="text-sm font-semibold text-gray-500 uppercase">Disetujui</p>
+                            <p className="text-2xl font-bold text-green-600 mt-1">{data.filter(d => d.status === "APPROVED").length}</p>
+                        </div>
+                        <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow p-4">
+                            <p className="text-sm font-semibold text-gray-500 uppercase">Ditolak</p>
+                            <p className="text-2xl font-bold text-red-600 mt-1">{data.filter(d => d.status === "REJECTED").length}</p>
+                        </div>
+                    </div>
+                )}
 
-                    <input
-                        type="date"
-                        value={tanggalPanen}
-                        onChange={(e) => setTanggalPanen(e.target.value)}
-                        className="border rounded p-2 bg-white"
-                    />
-                </div>
+                {/* FILTER SECTION */}
+                <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow mb-8">
+                    <div className="border-b border-gray-200 bg-gray-50 p-4">
+                        <h2 className="font-semibold text-gray-700">Filter Data Panen</h2>
+                    </div>
 
-                <button
-                    onClick={fetchData}
-                    className="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600 w-full md:w-auto"
-                >
-                    Terapkan Filter
-                </button>
-
-                <button
-                    onClick={() => {
-                        setBuruhId("");
-                        setTanggalPanen("");
-                        setTimeout(fetchData, 0);
-                    }}
-                    className="bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300 w-full md:w-auto"
-                >
-                    Reset
-                </button>
-            </div>
-
-            {/* MESSAGE */}
-            {actionMsg && (
-                <div
-                    className={`mb-4 p-3 rounded text-center font-medium ${
-                        actionMsg.startsWith("✅")
-                            ? "bg-green-100 text-green-700"
-                            : "bg-red-100 text-red-700"
-                    }`}
-                >
-                    {actionMsg}
-                </div>
-            )}
-
-            {/* MODAL REJECT */}
-            {rejectId && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-
-                    <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-xl">
-
-                        <h2 className="text-xl font-bold mb-2">
-                            Tolak Panen
-                        </h2>
-
-                        <p className="text-sm text-gray-500 mb-4">
-                            Alasan wajib diisi dan akan terlihat oleh buruh
-                        </p>
-
-                        <textarea
-                            value={alasan}
-                            onChange={(e) => setAlasan(e.target.value)}
-                            className="w-full border rounded p-3 mb-4 bg-white"
-                            rows={3}
-                        />
-
-                        <div className="flex gap-3">
-
-                            <button
-                                onClick={handleRejectSubmit}
-                                disabled={actionLoading}
-                                className="bg-red-500 text-white px-4 py-2 rounded flex-1 disabled:opacity-50"
+                    <div className="p-4 flex flex-col md:flex-row gap-4 items-end">
+                        <div className="flex flex-col w-full md:w-auto">
+                            <label className="text-xs font-semibold text-gray-500 uppercase mb-1">Buruh</label>
+                            <select
+                                value={buruhId}
+                                onChange={(e) => setBuruhId(e.target.value)}
+                                className="border border-gray-300 rounded p-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 md:w-64"
                             >
-                                {actionLoading ? "Loading..." : "Tolak"}
-                            </button>
+                                <option value="">Semua Buruh</option>
+                                {buruhList.map((b) => (
+                                    <option key={b.id} value={b.id}>
+                                        {b.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
 
+                        <div className="flex flex-col w-full md:w-auto">
+                            <label className="text-xs font-semibold text-gray-500 uppercase mb-1">Tanggal Panen</label>
+                            <input
+                                type="date"
+                                value={tanggalPanen}
+                                onChange={(e) => setTanggalPanen(e.target.value)}
+                                className="border border-gray-300 rounded p-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            />
+                        </div>
+
+                        <div className="flex gap-2 w-full md:w-auto">
+                            <button
+                                onClick={fetchData}
+                                className="bg-blue-900 text-white px-4 py-2 rounded text-sm hover:bg-blue-800 transition-colors"
+                            >
+                                Terapkan
+                            </button>
                             <button
                                 onClick={() => {
-                                    setRejectId(null);
-                                    setAlasan("");
+                                    setBuruhId("");
+                                    setTanggalPanen("");
+                                    setTimeout(fetchData, 0);
                                 }}
-                                className="bg-gray-200 px-4 py-2 rounded flex-1"
+                                className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded text-sm hover:bg-gray-50 transition-colors"
                             >
-                                Batal
+                                Reset
                             </button>
-
                         </div>
                     </div>
                 </div>
-            )}
 
-            {/* SUMMARY (Dengan tambahan Total Buruh) */}
-            {!loading && (
-                <div className="grid grid-cols-4 gap-4 mb-6">
+                {/* NOTIFICATIONS */}
+                {actionMsg && (
+                    <div className={`mb-8 p-4 rounded-lg border font-medium ${
+                        actionMsg.startsWith("✅") ? "bg-green-50 border-green-200 text-green-700" : "bg-red-50 border-red-200 text-red-700"
+                    }`}>
+                        {actionMsg}
+                    </div>
+                )}
 
-                    <div className="bg-blue-50 p-3 rounded text-center">
-                        <p className="text-2xl font-bold text-blue-600">
-                            {buruhList.length}
-                        </p>
-                        <p>Total Buruh</p>
+                {/* TABLE SECTION */}
+                <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow">
+                    <div className="border-b border-gray-200 bg-gray-50 p-4">
+                        <h2 className="font-semibold text-gray-700">Live Data Panen</h2>
                     </div>
 
-                    <div className="bg-yellow-50 p-3 rounded text-center">
-                        <p className="text-2xl font-bold text-yellow-600">
-                            {data.filter(d => d.status === "PENDING").length}
-                        </p>
-                        <p>Menunggu</p>
-                    </div>
+                    <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gray-50">
+                            <tr>
+                                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Tanggal</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Nama Buruh</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Berat (Kg)</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Status</th>
+                                <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">Aksi</th>
+                            </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-200 bg-white">
+                            {loading ? (
+                                <tr>
+                                    <td colSpan={5} className="px-6 py-10 text-center italic text-gray-500">
+                                        Memuat data...
+                                    </td>
+                                </tr>
+                            ) : data.length === 0 ? (
+                                <tr>
+                                    <td colSpan={5} className="px-6 py-10 text-center italic text-gray-500">
+                                        Belum ada data panen.
+                                    </td>
+                                </tr>
+                            ) : (
+                                data.map((item) => {
+                                    const buruhName = buruhList.find(b => b.id === item.buruhId)?.name || "User ID: " + item.buruhId.substring(0,8) + "...";
 
-                    <div className="bg-green-50 p-3 rounded text-center">
-                        <p className="text-2xl font-bold text-green-600">
-                            {data.filter(d => d.status === "APPROVED").length}
-                        </p>
-                        <p>Disetujui</p>
-                    </div>
+                                    return (
+                                        <tr key={item.id} className="transition-colors hover:bg-gray-50">
+                                            <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-700">
+                                                {item.harvestDate}
+                                            </td>
+                                            <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">
+                                                {buruhName}
+                                            </td>
+                                            <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-700">
+                                                {item.kilogram}
+                                            </td>
+                                            <td className="whitespace-nowrap px-6 py-4">
+                                                {renderStatusBadge(item.status)}
+                                            </td>
+                                            <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
+                                                <div className="flex justify-end gap-3">
+                                                    <button
+                                                        onClick={() => router.push(`/harvest/${item.id}`)}
+                                                        className="text-blue-600 hover:text-blue-900 transition-colors"
+                                                    >
+                                                        Detail
+                                                    </button>
 
-                    <div className="bg-red-50 p-3 rounded text-center">
-                        <p className="text-2xl font-bold text-red-600">
-                            {data.filter(d => d.status === "REJECTED").length}
-                        </p>
-                        <p>Ditolak</p>
+                                                    {item.status === "PENDING" && (
+                                                        <>
+                                                            <button
+                                                                onClick={() => handleApprove(item.id)}
+                                                                disabled={actionLoading}
+                                                                className="text-green-600 hover:text-green-900 transition-colors disabled:opacity-50"
+                                                            >
+                                                                Approve
+                                                            </button>
+                                                            <button
+                                                                onClick={() => setRejectId(item.id)}
+                                                                disabled={actionLoading}
+                                                                className="text-red-600 hover:text-red-900 transition-colors disabled:opacity-50"
+                                                            >
+                                                                Reject
+                                                            </button>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })
+                            )}
+                            </tbody>
+                        </table>
                     </div>
-
                 </div>
-            )}
 
-            {/* LIST */}
-            {loading ? (
-                <p className="text-center mt-10">Loading...</p>
-            ) : data.length === 0 ? (
-                <p className="text-center mt-10 text-gray-500">
-                    Belum ada data
-                </p>
-            ) : (
-                <div className="grid gap-4">
-
-                    {data.map((item) => {
-                        // Mencari nama buruh untuk ditampilkan, fallback ke ID jika belum ditarik
-                        const buruhName = buruhList.find(b => b.id === item.buruhId)?.name || item.buruhId;
-
-                        return (
-                            <div
-                                key={item.id}
-                                className="bg-white border shadow-sm p-4 rounded-lg"
-                            >
-                                <div className="flex justify-between">
-
-                                    <div className="flex-1">
-
-                                        <span
-                                            className={`text-xs px-2 py-1 rounded ${statusBadge(
-                                                item.status
-                                            )}`}
-                                        >
-                                            {item.status}
-                                        </span>
-
-                                        <p className="font-semibold mt-2">Buruh: {buruhName}</p>
-                                        <p className="text-sm text-gray-600">Tanggal: {item.harvestDate}</p>
-                                        <p className="text-sm text-gray-600">Kg: {item.kilogram}</p>
-
-                                        {item.rejectionReason && (
-                                            <p className="text-red-600 text-sm mt-1">
-                                                Alasan: {item.rejectionReason}
-                                            </p>
-                                        )}
-
-                                    </div>
-
-                                    {item.status === "PENDING" && (
-                                        <div className="flex flex-col gap-2 justify-center">
-
-                                            <button
-                                                onClick={() => handleApprove(item.id)}
-                                                disabled={actionLoading}
-                                                className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm transition-colors"
-                                            >
-                                                Approve
-                                            </button>
-
-                                            <button
-                                                onClick={() => setRejectId(item.id)}
-                                                disabled={actionLoading}
-                                                className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition-colors"
-                                            >
-                                                Reject
-                                            </button>
-
-                                        </div>
-                                    )}
-
+                {/* MODAL REJECT */}
+                {rejectId && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                        <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xl w-full max-w-md">
+                            <div className="border-b border-gray-200 bg-gray-50 p-4">
+                                <h2 className="font-semibold text-gray-700">Tolak Panen</h2>
+                            </div>
+                            <div className="p-6">
+                                <p className="text-sm text-gray-500 mb-4">
+                                    Alasan wajib diisi dan akan terlihat oleh buruh yang bersangkutan.
+                                </p>
+                                <textarea
+                                    value={alasan}
+                                    onChange={(e) => setAlasan(e.target.value)}
+                                    className="w-full border border-gray-300 rounded p-3 mb-4 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                    rows={3}
+                                    placeholder="Masukkan alasan penolakan..."
+                                />
+                                <div className="flex gap-3 justify-end">
+                                    <button
+                                        onClick={() => {
+                                            setRejectId(null);
+                                            setAlasan("");
+                                        }}
+                                        className="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded text-sm hover:bg-gray-50 transition-colors"
+                                    >
+                                        Batal
+                                    </button>
+                                    <button
+                                        onClick={handleRejectSubmit}
+                                        disabled={actionLoading}
+                                        className="bg-red-600 text-white px-4 py-2 rounded text-sm hover:bg-red-700 transition-colors disabled:opacity-50"
+                                    >
+                                        {actionLoading ? "Loading..." : "Tolak Panen"}
+                                    </button>
                                 </div>
                             </div>
-                        );
-                    })}
-
-                </div>
-            )}
-        </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+        </main>
     );
 }
