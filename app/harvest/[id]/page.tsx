@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { getHarvestDetail } from "@/lib/api";
+import Image from "next/image";
 
 interface HarvestDetail {
     id: string;
@@ -12,7 +13,7 @@ interface HarvestDetail {
     rejectionReason?: string;
     bisaDiangkutTruk?: boolean;
     photos: string[];
-    harvestDate?: string; // Tambahan jika ada dari API
+    harvestDate?: string;
 }
 
 export default function HarvestDetailPage() {
@@ -30,7 +31,6 @@ export default function HarvestDetailPage() {
         async function fetchData() {
             setLoading(true);
             setError("");
-
             try {
                 const res = await getHarvestDetail(id as string);
                 setData(res);
@@ -40,7 +40,6 @@ export default function HarvestDetailPage() {
                 setLoading(false);
             }
         }
-
         fetchData();
     }, [id]);
 
@@ -57,22 +56,16 @@ export default function HarvestDetailPage() {
     return (
         <main className="min-h-screen bg-gray-50 p-8 text-black font-sans">
             <div className="mx-auto max-w-2xl">
-
-                {/* HEADER & NAVIGATION */}
                 <div className="mb-8 flex items-center justify-between">
                     <div>
                         <h1 className="text-3xl font-bold text-blue-900">Rincian Laporan</h1>
                         <p className="text-sm text-gray-500 mt-1">ID: {data.id}</p>
                     </div>
-                    <button
-                        onClick={() => router.back()}
-                        className="text-sm font-semibold text-gray-500 hover:text-blue-900 transition-colors"
-                    >
+                    <button onClick={() => router.back()} className="text-sm font-semibold text-gray-500 hover:text-blue-900 transition-colors">
                         ← Kembali
                     </button>
                 </div>
 
-                {/* MAIN CONTENT CARD */}
                 <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-md">
                     <div className="border-b border-gray-200 bg-gray-50 p-4 flex justify-between items-center">
                         <h2 className="font-bold text-gray-700 uppercase tracking-wider text-xs">Informasi Panen</h2>
@@ -82,7 +75,6 @@ export default function HarvestDetailPage() {
                     </div>
 
                     <div className="p-6 space-y-6">
-                        {/* STATS GRID */}
                         <div className="grid grid-cols-2 gap-4">
                             <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
                                 <p className="text-[10px] uppercase font-bold text-blue-400 leading-none mb-2">Berat Total</p>
@@ -96,15 +88,13 @@ export default function HarvestDetailPage() {
                             </div>
                         </div>
 
-                        {/* NOTES SECTION */}
                         <div className="space-y-1">
                             <p className="text-[10px] uppercase font-bold text-gray-400">Catatan Laporan</p>
                             <div className="p-4 bg-gray-50 rounded-lg border border-gray-100 italic text-gray-700 text-sm">
-                                "{data.reportNote || "Tidak ada catatan tambahan."}"
+                                &quot;{data.reportNote || "Tidak ada catatan tambahan."}&quot;
                             </div>
                         </div>
 
-                        {/* REJECTION REASON (IF ANY) */}
                         {data.status === "REJECTED" && data.rejectionReason && (
                             <div className="space-y-1">
                                 <p className="text-[10px] uppercase font-bold text-red-400">Alasan Penolakan Mandor</p>
@@ -114,16 +104,17 @@ export default function HarvestDetailPage() {
                             </div>
                         )}
 
-                        {/* PHOTOS SECTION */}
                         {data.photos && data.photos.length > 0 && (
                             <div className="pt-4 border-t border-gray-100">
                                 <p className="text-[10px] uppercase font-bold text-gray-400 mb-3">Lampiran Foto Bukti</p>
                                 <div className="grid grid-cols-2 gap-3">
                                     {data.photos.map((url, idx) => (
                                         <div key={idx} className="group relative overflow-hidden rounded-lg border border-gray-200 shadow-sm transition-hover hover:border-blue-300">
-                                            <img
+                                            <Image
                                                 src={url}
                                                 alt={`Bukti ${idx + 1}`}
+                                                width={400}
+                                                height={300}
                                                 className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105"
                                             />
                                         </div>
@@ -132,12 +123,6 @@ export default function HarvestDetailPage() {
                             </div>
                         )}
                     </div>
-                </div>
-
-                <div className="mt-8 pt-6 border-t border-gray-200 text-center">
-                    <p className="text-xs text-gray-400 uppercase tracking-widest font-medium">
-                        Sistem Manajemen Digital MySawit
-                    </p>
                 </div>
             </div>
         </main>
