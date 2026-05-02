@@ -47,6 +47,7 @@ export default function Navbar() {
     { href: "/deliveries", label: "Pengiriman" },
     ...(userRole === "ADMIN"
       ? [
+          { href: "/garden", label: "Kebun" },
           { href: "/user", label: "Manajemen User" },
           { href: "/assignments", label: "Assignment" },
         ]
