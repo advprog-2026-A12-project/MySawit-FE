@@ -35,7 +35,8 @@ export default function HarvestDetailPage() {
                 const res = await getHarvestDetail(id as string);
                 setData(res);
             } catch (err) {
-                setError(err instanceof Error ? err.message : "Terjadi kesalahan saat mengambil data");
+                // Pesan error teknis disembunyikan dari user
+                setError("Gagal memuat rincian data. Pastikan koneksi internet stabil atau coba lagi nanti.");
             } finally {
                 setLoading(false);
             }
@@ -58,10 +59,10 @@ export default function HarvestDetailPage() {
             <div className="mx-auto max-w-2xl">
                 <div className="mb-8 flex items-center justify-between">
                     <div>
-                        <h1 className="text-3xl font-bold text-blue-900">Rincian Laporan</h1>
+                        <h1 className="text-3xl font-bold text-green-800">Rincian Laporan</h1>
                         <p className="text-sm text-gray-500 mt-1">ID: {data.id}</p>
                     </div>
-                    <button onClick={() => router.back()} className="text-sm font-semibold text-gray-500 hover:text-blue-900 transition-colors">
+                    <button onClick={() => router.back()} className="text-sm font-semibold text-gray-500 hover:text-green-800 transition-colors">
                         ← Kembali
                     </button>
                 </div>
@@ -76,14 +77,18 @@ export default function HarvestDetailPage() {
 
                     <div className="p-6 space-y-6">
                         <div className="grid grid-cols-2 gap-4">
-                            <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
-                                <p className="text-[10px] uppercase font-bold text-blue-400 leading-none mb-2">Berat Total</p>
-                                <p className="text-2xl font-black text-blue-900">{data.kilogram} <span className="text-sm font-normal">Kg</span></p>
+                            <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                                <p className="text-[10px] uppercase font-bold text-green-600 leading-none mb-2">Berat Total</p>
+                                <p className="text-2xl font-black text-green-900">{data.kilogram} <span className="text-sm font-normal">Kg</span></p>
                             </div>
                             <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
                                 <p className="text-[10px] uppercase font-bold text-gray-400 leading-none mb-2">Logistik</p>
                                 <p className="text-sm font-bold text-gray-700">
-                                    {data.bisaDiangkutTruk ? "✅ Siap Angkut" : "⏳ Menunggu Verifikasi"}
+                                    {data.status === "REJECTED"
+                                        ? "❌ Batal Angkut"
+                                        : data.bisaDiangkutTruk
+                                            ? "✅ Siap Angkut"
+                                            : "⏳ Menunggu Verifikasi"}
                                 </p>
                             </div>
                         </div>
@@ -109,7 +114,7 @@ export default function HarvestDetailPage() {
                                 <p className="text-[10px] uppercase font-bold text-gray-400 mb-3">Lampiran Foto Bukti</p>
                                 <div className="grid grid-cols-2 gap-3">
                                     {data.photos.map((url, idx) => (
-                                        <div key={idx} className="group relative overflow-hidden rounded-lg border border-gray-200 shadow-sm transition-hover hover:border-blue-300">
+                                        <div key={idx} className="group relative overflow-hidden rounded-lg border border-gray-200 shadow-sm transition-hover hover:border-green-400">
                                             <Image
                                                 src={url}
                                                 alt={`Bukti ${idx + 1}`}
