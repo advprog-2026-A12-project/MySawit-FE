@@ -108,6 +108,10 @@ export async function getMyWallet() {
   return request<Wallet>("/wallets/me");
 }
 
+export async function getWalletByUserId(userId: string) {
+  return request<Wallet>(`/wallets/${userId}`);
+}
+
 export async function getMyWalletTransactions(params?: WalletTransactionParams) {
   const query = buildQuery(params);
 
