@@ -50,6 +50,7 @@ export default function Navbar() {
           { href: "/garden", label: "Kebun" },
           { href: "/user", label: "Manajemen User" },
           { href: "/assignments", label: "Assignment" },
+          { href: "/wage-config", label: "Tarif Upah" },
         ]
       : []),
   ];

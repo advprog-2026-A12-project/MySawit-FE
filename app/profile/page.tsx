@@ -237,6 +237,12 @@ export default function ProfilePage() {
                   >
                     Assignment
                   </Link>
+                  <Link
+                    href="/wage-config"
+                    className="inline-flex rounded-lg border border-green-300 bg-green-50 px-4 py-2 text-sm font-semibold text-green-800 hover:bg-green-100"
+                  >
+                    Tarif Upah
+                  </Link>
                 </>
               )}
               <button
