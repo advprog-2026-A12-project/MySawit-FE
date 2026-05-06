@@ -272,7 +272,7 @@ export default function PayrollsPage() {
 
   const payrollData = payrollsQuery.data;
   const payrolls = payrollData?.content ?? [];
-  const totalPages = payrollData?.totalPages ?? 1;
+  const totalPages = Math.max(payrollData?.totalPages ?? 1, 1);
   const detailPayroll = detailQuery.data;
 
   return (

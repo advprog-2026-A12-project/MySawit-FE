@@ -210,6 +210,7 @@ export default function ProfilePage() {
   const transactionsError = transactionsQuery.isError ? (transactionsQuery.error as ApiError) : null;
   const transactions = transactionsQuery.data?.data.content ?? [];
   const transactionPageInfo = transactionsQuery.data?.data;
+  const transactionTotalPages = Math.max(transactionPageInfo?.totalPages ?? 1, 1);
 
   return (
     <main className="min-h-screen bg-green-50 p-4 sm:p-8">
@@ -569,7 +570,7 @@ export default function ProfilePage() {
                   </div>
                 )}
 
-                {transactionPageInfo && transactionPageInfo.totalPages > 1 && (
+                {transactionPageInfo && transactionTotalPages > 1 && (
                   <div className="mt-4 flex items-center justify-between gap-3">
                     <button
                       type="button"
@@ -580,12 +581,12 @@ export default function ProfilePage() {
                       Sebelumnya
                     </button>
                     <p className="text-sm text-gray-500">
-                      Halaman {transactionPageInfo.page + 1} dari {transactionPageInfo.totalPages}
+                      Halaman {transactionPageInfo.page + 1} dari {transactionTotalPages}
                     </p>
                     <button
                       type="button"
                       onClick={() => setTransactionPage((page) => page + 1)}
-                      disabled={transactionsQuery.isFetching || transactionPageInfo.last}
+                      disabled={transactionsQuery.isFetching || transactionPageInfo.last || transactionPage + 1 >= transactionTotalPages}
                       className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50"
                     >
                       Berikutnya
