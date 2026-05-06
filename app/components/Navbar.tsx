@@ -52,6 +52,7 @@ export default function Navbar() {
           { href: "/user", label: "Manajemen User" },
           { href: "/assignments", label: "Assignment" },
           { href: "/wage-config", label: "Tarif Upah" },
+          { href: "/topup", label: "Top-up" },
         ]
       : []),
   ];
