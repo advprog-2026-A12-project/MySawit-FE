@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { FormEvent, useState } from "react";
 import {
   ApiError,
@@ -211,6 +210,7 @@ export default function ProfilePage() {
   const transactionsError = transactionsQuery.isError ? (transactionsQuery.error as ApiError) : null;
   const transactions = transactionsQuery.data?.data.content ?? [];
   const transactionPageInfo = transactionsQuery.data?.data;
+  const transactionTotalPages = Math.max(transactionPageInfo?.totalPages ?? 1, 1);
 
   return (
     <main className="min-h-screen bg-green-50 p-4 sm:p-8">
@@ -223,28 +223,6 @@ export default function ProfilePage() {
             </div>
 
             <div className="flex gap-2">
-              {profile.role === "ADMIN" && (
-                <>
-                  <Link
-                    href="/user"
-                    className="inline-flex rounded-lg border border-green-300 bg-green-50 px-4 py-2 text-sm font-semibold text-green-800 hover:bg-green-100"
-                  >
-                    Manajemen User
-                  </Link>
-                  <Link
-                    href="/assignments"
-                    className="inline-flex rounded-lg border border-green-300 bg-green-50 px-4 py-2 text-sm font-semibold text-green-800 hover:bg-green-100"
-                  >
-                    Assignment
-                  </Link>
-                  <Link
-                    href="/wage-config"
-                    className="inline-flex rounded-lg border border-green-300 bg-green-50 px-4 py-2 text-sm font-semibold text-green-800 hover:bg-green-100"
-                  >
-                    Tarif Upah
-                  </Link>
-                </>
-              )}
               <button
                 type="button"
                 onClick={() => logoutMutation.mutate()}
@@ -592,7 +570,7 @@ export default function ProfilePage() {
                   </div>
                 )}
 
-                {transactionPageInfo && transactionPageInfo.totalPages > 1 && (
+                {transactionPageInfo && transactionTotalPages > 1 && (
                   <div className="mt-4 flex items-center justify-between gap-3">
                     <button
                       type="button"
@@ -603,12 +581,12 @@ export default function ProfilePage() {
                       Sebelumnya
                     </button>
                     <p className="text-sm text-gray-500">
-                      Halaman {transactionPageInfo.page + 1} dari {transactionPageInfo.totalPages}
+                      Halaman {transactionPageInfo.page + 1} dari {transactionTotalPages}
                     </p>
                     <button
                       type="button"
                       onClick={() => setTransactionPage((page) => page + 1)}
-                      disabled={transactionsQuery.isFetching || transactionPageInfo.last}
+                      disabled={transactionsQuery.isFetching || transactionPageInfo.last || transactionPage + 1 >= transactionTotalPages}
                       className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50"
                     >
                       Berikutnya

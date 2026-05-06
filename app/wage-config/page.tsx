@@ -166,6 +166,7 @@ export default function WageConfigPage() {
   const activeMissing = activeError?.status === 404;
   const historyData = historyQuery.data?.data;
   const historyItems = historyData?.content ?? [];
+  const historyTotalPages = Math.max(historyData?.totalPages ?? 1, 1);
 
   return (
     <main className="min-h-screen bg-green-50 p-4 sm:p-8">
@@ -179,20 +180,6 @@ export default function WageConfigPage() {
               </p>
             </div>
 
-            <div className="flex gap-2">
-              <Link
-                href="/user"
-                className="inline-flex rounded-lg border border-green-300 bg-green-50 px-4 py-2 text-sm font-semibold text-green-800 hover:bg-green-100"
-              >
-                Manajemen User
-              </Link>
-              <Link
-                href="/profile"
-                className="inline-flex rounded-lg border border-green-300 bg-green-50 px-4 py-2 text-sm font-semibold text-green-800 hover:bg-green-100"
-              >
-                Profil Saya
-              </Link>
-            </div>
           </div>
         </section>
 
@@ -434,13 +421,13 @@ export default function WageConfigPage() {
               </button>
 
               <span className="text-sm text-gray-600">
-                Halaman {historyPage + 1} / {historyData?.totalPages ?? 1}
+                Halaman {historyPage + 1} / {historyTotalPages}
               </span>
 
               <button
                 type="button"
-                onClick={() => setHistoryPage((prev) => Math.min(prev + 1, (historyData?.totalPages ?? 1) - 1))}
-                disabled={historyPage + 1 >= (historyData?.totalPages ?? 1) || historyQuery.isLoading}
+                onClick={() => setHistoryPage((prev) => Math.min(prev + 1, historyTotalPages - 1))}
+                disabled={historyPage + 1 >= historyTotalPages || historyQuery.isLoading}
                 className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Berikutnya

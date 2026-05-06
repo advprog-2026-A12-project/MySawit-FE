@@ -45,6 +45,7 @@ export default function Navbar() {
     { href: "/profile", label: "Profil" },
     { href: "/harvest", label: "Panen" },
     { href: "/deliveries", label: "Pengiriman" },
+    { href: "/payrolls", label: "Payroll" },
     ...(userRole === "ADMIN"
       ? [
           { href: "/garden", label: "Kebun" },
