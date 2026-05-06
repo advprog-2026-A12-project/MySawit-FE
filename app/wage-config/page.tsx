@@ -179,20 +179,6 @@ export default function WageConfigPage() {
               </p>
             </div>
 
-            <div className="flex gap-2">
-              <Link
-                href="/user"
-                className="inline-flex rounded-lg border border-green-300 bg-green-50 px-4 py-2 text-sm font-semibold text-green-800 hover:bg-green-100"
-              >
-                Manajemen User
-              </Link>
-              <Link
-                href="/profile"
-                className="inline-flex rounded-lg border border-green-300 bg-green-50 px-4 py-2 text-sm font-semibold text-green-800 hover:bg-green-100"
-              >
-                Profil Saya
-              </Link>
-            </div>
           </div>
         </section>
 
