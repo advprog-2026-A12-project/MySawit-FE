@@ -45,13 +45,13 @@ export default function Navbar() {
     { href: "/profile", label: "Profil" },
     { href: "/harvest", label: "Panen" },
     { href: "/deliveries", label: "Pengiriman" },
+    { href: "/payrolls", label: "Payroll" },
     ...(userRole === "ADMIN"
       ? [
           { href: "/garden", label: "Kebun" },
           { href: "/user", label: "Manajemen User" },
           { href: "/assignments", label: "Assignment" },
           { href: "/wage-config", label: "Tarif Upah" },
-          { href: "/payrolls", label: "Payroll" },
         ]
       : []),
   ];
