@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { FormEvent, useState } from "react";
 import ConfirmDialog from "@/app/components/ConfirmDialog";
 import { useToast } from "@/app/components/ToastProvider";
@@ -12,6 +11,7 @@ import {
   PayrollUserRole,
   acceptPayroll,
   getPayrollDetail,
+  getMyPayrolls,
   getPayrolls,
   rejectPayroll,
 } from "@/lib/payroll-api";
@@ -43,6 +43,8 @@ const payrollSortOptions = [
   { value: "kilogram,desc", label: "Kg terbesar" },
   { value: "kilogram,asc", label: "Kg terkecil" },
 ] as const;
+
+const myPayrollSortOptions = payrollSortOptions.filter((option) => !option.value.startsWith("kilogram"));
 
 function statusBadge(status: PayrollStatus) {
   switch (status) {
@@ -117,12 +119,14 @@ export default function PayrollsPage() {
     queryFn: () => getMe(),
   });
 
-  const isAdmin = meQuery.data?.data.role === "ADMIN";
+  const profile = meQuery.data?.data;
+  const isAdmin = profile?.role === "ADMIN";
 
   const payrollsQuery = useQuery({
     queryKey: [
       "payrolls",
-      "admin",
+      isAdmin ? "admin" : "me",
+      profile?.id,
       page,
       size,
       sort,
@@ -133,19 +137,31 @@ export default function PayrollsPage() {
       dateTo,
       userNameFilter,
     ],
-    queryFn: () =>
-      getPayrolls({
+    queryFn: () => {
+      if (isAdmin) {
+        return getPayrolls({
+          page,
+          size,
+          sort,
+          status: status || undefined,
+          userRole: userRole || undefined,
+          referenceType: referenceType || undefined,
+          dateFrom: dateFrom || undefined,
+          dateTo: dateTo || undefined,
+          userName: userNameFilter || undefined,
+        }).then((response) => response.data);
+      }
+
+      return getMyPayrolls({
         page,
         size,
-        sort,
+        sort: sort.startsWith("kilogram") ? "createdAt,desc" : sort,
         status: status || undefined,
-        userRole: userRole || undefined,
-        referenceType: referenceType || undefined,
         dateFrom: dateFrom || undefined,
         dateTo: dateTo || undefined,
-        userName: userNameFilter || undefined,
-      }).then((response) => response.data),
-    enabled: isAdmin,
+      }).then((response) => response.data);
+    },
+    enabled: Boolean(profile),
   });
 
   const detailQuery = useQuery({
@@ -254,23 +270,6 @@ export default function PayrollsPage() {
     );
   }
 
-  if (!isAdmin) {
-    return (
-      <main className="min-h-screen bg-green-50 p-4 sm:p-8">
-        <div className="mx-auto max-w-3xl rounded-2xl border border-green-200 bg-white p-6 sm:p-8">
-          <h1 className="text-2xl font-bold text-green-900">Akses Terbatas</h1>
-          <p className="mt-2 text-sm text-gray-600">Halaman payroll admin hanya dapat diakses oleh role ADMIN.</p>
-          <Link
-            href="/profile"
-            className="mt-6 inline-flex rounded-lg bg-green-700 px-4 py-2 text-sm font-semibold text-white hover:bg-green-800"
-          >
-            Buka Profil Saya
-          </Link>
-        </div>
-      </main>
-    );
-  }
-
   const payrollData = payrollsQuery.data;
   const payrolls = payrollData?.content ?? [];
   const totalPages = payrollData?.totalPages ?? 1;
@@ -282,9 +281,13 @@ export default function PayrollsPage() {
         <section className="rounded-2xl border border-green-200 bg-white p-6 sm:p-8">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h1 className="text-3xl font-bold tracking-tight text-green-900">Payroll Admin</h1>
+              <h1 className="text-3xl font-bold tracking-tight text-green-900">
+                {isAdmin ? "Payroll Admin" : "Payroll Saya"}
+              </h1>
               <p className="mt-1 text-sm text-green-700">
-                Review payroll, setujui pencairan, atau tolak dengan alasan.
+                {isAdmin
+                  ? "Review payroll, setujui pencairan, atau tolak dengan alasan."
+                  : "Pantau status payroll dan detail pembayaran Anda."}
               </p>
             </div>
 
@@ -293,26 +296,28 @@ export default function PayrollsPage() {
 
         <section className="rounded-2xl border border-green-200 bg-white p-6">
           <div className="grid gap-4 lg:grid-cols-6">
-            <form onSubmit={handleApplyNameFilter} className="lg:col-span-2">
-              <label htmlFor="userName" className="mb-1 block text-sm font-medium text-gray-700">
-                Nama penerima
-              </label>
-              <div className="flex gap-2">
-                <input
-                  id="userName"
-                  value={userNameInput}
-                  onChange={(event) => setUserNameInput(event.target.value)}
-                  placeholder="Cari nama"
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200"
-                />
-                <button
-                  type="submit"
-                  className="rounded-lg bg-green-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-green-800"
-                >
-                  Cari
-                </button>
-              </div>
-            </form>
+            {isAdmin && (
+              <form onSubmit={handleApplyNameFilter} className="lg:col-span-2">
+                <label htmlFor="userName" className="mb-1 block text-sm font-medium text-gray-700">
+                  Nama penerima
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    id="userName"
+                    value={userNameInput}
+                    onChange={(event) => setUserNameInput(event.target.value)}
+                    placeholder="Cari nama"
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200"
+                  />
+                  <button
+                    type="submit"
+                    className="rounded-lg bg-green-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-green-800"
+                  >
+                    Cari
+                  </button>
+                </div>
+              </form>
+            )}
 
             <div>
               <label htmlFor="status" className="mb-1 block text-sm font-medium text-gray-700">
@@ -334,44 +339,48 @@ export default function PayrollsPage() {
               </select>
             </div>
 
-            <div>
-              <label htmlFor="userRole" className="mb-1 block text-sm font-medium text-gray-700">
-                Role
-              </label>
-              <select
-                id="userRole"
-                value={userRole}
-                onChange={(event) => {
-                  setPage(0);
-                  setUserRole(event.target.value as PayrollUserRole | "");
-                }}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200"
-              >
-                <option value="">Semua</option>
-                <option value="BURUH">BURUH</option>
-                <option value="MANDOR">MANDOR</option>
-                <option value="SUPIR_TRUK">SUPIR_TRUK</option>
-              </select>
-            </div>
+            {isAdmin && (
+              <>
+                <div>
+                  <label htmlFor="userRole" className="mb-1 block text-sm font-medium text-gray-700">
+                    Role
+                  </label>
+                  <select
+                    id="userRole"
+                    value={userRole}
+                    onChange={(event) => {
+                      setPage(0);
+                      setUserRole(event.target.value as PayrollUserRole | "");
+                    }}
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200"
+                  >
+                    <option value="">Semua</option>
+                    <option value="BURUH">BURUH</option>
+                    <option value="MANDOR">MANDOR</option>
+                    <option value="SUPIR_TRUK">SUPIR_TRUK</option>
+                  </select>
+                </div>
 
-            <div>
-              <label htmlFor="referenceType" className="mb-1 block text-sm font-medium text-gray-700">
-                Referensi
-              </label>
-              <select
-                id="referenceType"
-                value={referenceType}
-                onChange={(event) => {
-                  setPage(0);
-                  setReferenceType(event.target.value as PayrollReferenceType | "");
-                }}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200"
-              >
-                <option value="">Semua</option>
-                <option value="HARVEST">HARVEST</option>
-                <option value="DELIVERY">DELIVERY</option>
-              </select>
-            </div>
+                <div>
+                  <label htmlFor="referenceType" className="mb-1 block text-sm font-medium text-gray-700">
+                    Referensi
+                  </label>
+                  <select
+                    id="referenceType"
+                    value={referenceType}
+                    onChange={(event) => {
+                      setPage(0);
+                      setReferenceType(event.target.value as PayrollReferenceType | "");
+                    }}
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200"
+                  >
+                    <option value="">Semua</option>
+                    <option value="HARVEST">HARVEST</option>
+                    <option value="DELIVERY">DELIVERY</option>
+                  </select>
+                </div>
+              </>
+            )}
 
             <div>
               <label htmlFor="sort" className="mb-1 block text-sm font-medium text-gray-700">
@@ -386,7 +395,7 @@ export default function PayrollsPage() {
                 }}
                 className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200"
               >
-                {payrollSortOptions.map((option) => (
+                {(isAdmin ? payrollSortOptions : myPayrollSortOptions).map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
                   </option>
@@ -471,7 +480,7 @@ export default function PayrollsPage() {
               <thead className="bg-green-100/60">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">
-                    Penerima
+                    {isAdmin ? "Penerima" : "Payroll"}
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">
                     Amount
@@ -513,14 +522,25 @@ export default function PayrollsPage() {
                   payrolls.map((payroll) => (
                     <tr key={payroll.id} className="hover:bg-green-50/50">
                       <td className="whitespace-nowrap px-4 py-3 text-sm">
-                        <p className="font-semibold text-gray-900">{payroll.user.name}</p>
-                        <span
-                          className={`mt-1 inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${roleBadge(
-                            payroll.user.role
-                          )}`}
-                        >
-                          {roleLabels[payroll.user.role]}
-                        </span>
+                        {isAdmin && payroll.user ? (
+                          <>
+                            <p className="font-semibold text-gray-900">{payroll.user.name}</p>
+                            <span
+                              className={`mt-1 inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${roleBadge(
+                                payroll.user.role
+                              )}`}
+                            >
+                              {roleLabels[payroll.user.role]}
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <p className="font-semibold text-gray-900">
+                              {referenceTypeLabels[payroll.referenceType]}
+                            </p>
+                            <p className="mt-1 max-w-xs truncate text-xs text-gray-500">{payroll.description}</p>
+                          </>
+                        )}
                       </td>
                       <td className="whitespace-nowrap px-4 py-3 text-sm font-semibold text-gray-900">
                         {formatAmount(payroll.amount)}
@@ -555,7 +575,7 @@ export default function PayrollsPage() {
                           >
                             Detail
                           </button>
-                          {payroll.status === "PENDING" && (
+                          {isAdmin && payroll.status === "PENDING" && (
                             <>
                               <button
                                 type="button"
@@ -667,7 +687,9 @@ export default function PayrollsPage() {
                     <div className="rounded-lg border border-gray-200 p-4">
                       <dt className="text-gray-500">Penerima</dt>
                       <dd className="mt-1 font-semibold text-gray-900">
-                        {detailPayroll.user.name} ({roleLabels[detailPayroll.user.role]})
+                        {detailPayroll.user
+                          ? `${detailPayroll.user.name} (${roleLabels[detailPayroll.user.role]})`
+                          : profile?.name ?? "-"}
                       </dd>
                     </div>
                     <div className="rounded-lg border border-gray-200 p-4">
@@ -708,7 +730,7 @@ export default function PayrollsPage() {
                     </div>
                   )}
 
-                  {detailPayroll.status === "PENDING" && (
+                  {isAdmin && detailPayroll.status === "PENDING" && (
                     <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
                       <button
                         type="button"
@@ -741,7 +763,7 @@ export default function PayrollsPage() {
         title="Accept payroll?"
         description={
           pendingAcceptPayroll
-            ? `Payroll ${pendingAcceptPayroll.user.name} sebesar ${formatAmount(
+            ? `Payroll ${pendingAcceptPayroll.user?.name ?? "ini"} sebesar ${formatAmount(
                 pendingAcceptPayroll.amount
               )} akan dibayarkan dari wallet admin ke wallet pekerja.`
             : ""
@@ -763,7 +785,7 @@ export default function PayrollsPage() {
             <div className="border-b border-gray-100 px-6 py-5">
               <h2 className="text-xl font-semibold text-gray-900">Reject Payroll</h2>
               <p className="mt-2 text-sm text-gray-600">
-                Beri alasan penolakan untuk payroll {pendingRejectPayroll.user.name}.
+                Beri alasan penolakan untuk payroll {pendingRejectPayroll.user?.name ?? "ini"}.
               </p>
             </div>
 

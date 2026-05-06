@@ -17,7 +17,7 @@ export interface PayrollApprover {
 
 export interface Payroll {
   id: string;
-  user: PayrollUser;
+  user?: PayrollUser;
   amount: number;
   kilogram: number;
   ratePerKg: number;
@@ -65,6 +65,15 @@ export interface PayrollListParams {
   dateFrom?: string;
   dateTo?: string;
   userName?: string;
+}
+
+export interface MyPayrollListParams {
+  page?: number;
+  size?: number;
+  sort?: string;
+  status?: PayrollStatus;
+  dateFrom?: string;
+  dateTo?: string;
 }
 
 function normalizeApiBase(url: string | undefined) {
@@ -141,10 +150,29 @@ function buildPayrollQuery(params?: PayrollListParams) {
   return query.toString();
 }
 
+function buildMyPayrollQuery(params?: MyPayrollListParams) {
+  const query = new URLSearchParams();
+
+  if (typeof params?.page === "number") query.set("page", String(params.page));
+  if (typeof params?.size === "number") query.set("size", String(params.size));
+  if (params?.sort) query.set("sort", params.sort);
+  if (params?.status) query.set("status", params.status);
+  if (params?.dateFrom) query.set("dateFrom", params.dateFrom);
+  if (params?.dateTo) query.set("dateTo", params.dateTo);
+
+  return query.toString();
+}
+
 export async function getPayrolls(params?: PayrollListParams) {
   const query = buildPayrollQuery(params);
 
   return request<PaginatedResponse<Payroll>>(`/payrolls${query ? `?${query}` : ""}`);
+}
+
+export async function getMyPayrolls(params?: MyPayrollListParams) {
+  const query = buildMyPayrollQuery(params);
+
+  return request<PaginatedResponse<Payroll>>(`/payrolls/me${query ? `?${query}` : ""}`);
 }
 
 export async function getPayrollDetail(payrollId: string) {
