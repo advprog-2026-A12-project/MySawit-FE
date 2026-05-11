@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { getMyHarvest, deleteHarvest, getUser } from "@/lib/api";
-import { UserProfile } from "@/lib/auth-api"; // Import tipe profil
+import { getMyHarvest, getUser } from "@/lib/api";
+import { UserProfile } from "@/lib/auth-api";
 import { useRouter } from "next/navigation";
 
 type Harvest = {
@@ -30,7 +30,6 @@ export default function HarvestPage() {
 
     const isMandor = user?.role === "MANDOR";
 
-    // Dibungkus useCallback agar aman dimasukkan ke dependency useEffect
     const fetchHarvests = useCallback(async () => {
         setLoading(true);
         try {
@@ -60,21 +59,6 @@ export default function HarvestPage() {
         fetchHarvests();
     }, [user, isMandor, router, fetchHarvests]);
 
-    const handleDelete = async (e: React.MouseEvent, id: string) => {
-        e.preventDefault();
-        e.stopPropagation();
-
-        if (!confirm("Yakin ingin menghapus riwayat laporan ini?")) return;
-
-        try {
-            await deleteHarvest(id);
-            alert("Laporan berhasil dihapus!");
-            fetchHarvests();
-        } catch {
-            alert("Gagal menghapus data.");
-        }
-    };
-
     const renderStatusBadge = (s: string) => {
         if (s === "APPROVED") {
             return <span className="inline-flex rounded-full bg-green-100 px-2 py-1 text-xs font-semibold text-green-800 border border-green-200">APPROVED</span>;
@@ -91,19 +75,18 @@ export default function HarvestPage() {
 
                 <div className="mb-8 flex items-center justify-between">
                     <div>
-                        <h1 className="text-3xl font-bold text-blue-900">Riwayat Panen</h1>
+                        <h1 className="text-3xl font-bold text-green-800">Riwayat Panen</h1>
                         <p className="text-gray-500 mt-1">Daftar seluruh laporan hasil panen Anda</p>
                     </div>
 
                     <button
                         onClick={() => router.push("/harvest/create")}
-                        className="bg-blue-900 text-white px-6 py-2.5 rounded-lg hover:bg-blue-800 transition-all font-bold text-sm shadow-md active:scale-95"
+                        className="bg-green-800 text-white px-6 py-2.5 rounded-lg hover:bg-green-900 transition-all font-bold text-sm shadow-md active:scale-95"
                     >
                         + Tambah Hasil Panen
                     </button>
                 </div>
 
-                {/* FILTER SECTION */}
                 <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow mb-8">
                     <div className="border-b border-gray-200 bg-gray-50 p-4">
                         <h2 className="font-semibold text-gray-700">Filter Riwayat</h2>
@@ -116,7 +99,7 @@ export default function HarvestPage() {
                                 type="date"
                                 value={startDate}
                                 onChange={(e) => setStartDate(e.target.value)}
-                                className="border border-gray-300 rounded p-2 text-sm focus:ring-1 focus:ring-blue-500 outline-none"
+                                className="border border-gray-300 rounded p-2 text-sm focus:ring-1 focus:ring-green-500 outline-none"
                             />
                         </div>
 
@@ -126,7 +109,7 @@ export default function HarvestPage() {
                                 type="date"
                                 value={endDate}
                                 onChange={(e) => setEndDate(e.target.value)}
-                                className="border border-gray-300 rounded p-2 text-sm focus:ring-1 focus:ring-blue-500 outline-none"
+                                className="border border-gray-300 rounded p-2 text-sm focus:ring-1 focus:ring-green-500 outline-none"
                             />
                         </div>
 
@@ -135,7 +118,7 @@ export default function HarvestPage() {
                             <select
                                 value={status}
                                 onChange={(e) => setStatus(e.target.value)}
-                                className="border border-gray-300 rounded p-2 text-sm focus:ring-1 focus:ring-blue-500 outline-none md:w-40"
+                                className="border border-gray-300 rounded p-2 text-sm focus:ring-1 focus:ring-green-500 outline-none md:w-40"
                             >
                                 <option value="">Semua Status</option>
                                 <option value="PENDING">PENDING</option>
@@ -146,14 +129,13 @@ export default function HarvestPage() {
 
                         <button
                             onClick={fetchHarvests}
-                            className="bg-blue-900 text-white px-5 py-2 rounded text-sm hover:bg-blue-800 transition-colors font-semibold"
+                            className="bg-green-800 text-white px-5 py-2 rounded text-sm hover:bg-green-900 transition-colors font-semibold"
                         >
                             Terapkan Filter
                         </button>
                     </div>
                 </div>
 
-                {/* TABLE SECTION */}
                 <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow">
                     <div className="border-b border-gray-200 bg-gray-50 p-4">
                         <h2 className="font-semibold text-gray-700">Data Panen Lapangan</h2>
@@ -199,23 +181,15 @@ export default function HarvestPage() {
                                             {item.status === "REJECTED" ? (item.rejectionReason || "-") : "-"}
                                         </td>
                                         <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
-                                            <div className="flex justify-end gap-4">
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        router.push(`/harvest/${item.id}`);
-                                                    }}
-                                                    className="text-blue-600 hover:text-blue-900 font-bold"
-                                                >
-                                                    Detail
-                                                </button>
-                                                <button
-                                                    onClick={(e) => handleDelete(e, item.id)}
-                                                    className="text-red-600 hover:text-red-900 font-bold"
-                                                >
-                                                    Hapus
-                                                </button>
-                                            </div>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    router.push(`/harvest/${item.id}`);
+                                                }}
+                                                className="text-green-600 hover:text-green-800 font-bold"
+                                            >
+                                                Detail
+                                            </button>
                                         </td>
                                     </tr>
                                 ))

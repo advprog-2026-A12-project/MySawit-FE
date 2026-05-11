@@ -11,9 +11,6 @@ import {
 import { UserProfile } from "@/lib/auth-api";
 import { useRouter } from "next/navigation";
 
-// =========================
-// TYPE
-// =========================
 type Harvest = {
     id: string;
     buruhId: string;
@@ -29,9 +26,6 @@ type Buruh = {
     name: string;
 };
 
-// =========================
-// PAGE
-// =========================
 export default function MandorPage() {
     const [data, setData] = useState<Harvest[]>([]);
     const [buruhList, setBuruhList] = useState<Buruh[]>([]);
@@ -48,9 +42,6 @@ export default function MandorPage() {
 
     const router = useRouter();
 
-    // =========================
-    // FETCH DATA PANEN
-    // =========================
     const fetchData = useCallback(async () => {
         setLoading(true);
         setActionMsg("");
@@ -71,9 +62,6 @@ export default function MandorPage() {
         }
     }, [buruhId, tanggalPanen]);
 
-    // =========================
-    // FETCH DATA BURUH
-    // =========================
     const fetchBuruhOptions = useCallback(async () => {
         const user = getUser() as UserProfile | null;
         if (!user?.id) return;
@@ -88,17 +76,11 @@ export default function MandorPage() {
         }
     }, []);
 
-    // =========================
-    // INIT LOAD
-    // =========================
     useEffect(() => {
         fetchBuruhOptions();
         fetchData();
     }, [fetchBuruhOptions, fetchData]);
 
-    // =========================
-    // APPROVE
-    // =========================
     const handleApprove = async (id: string) => {
         if (!confirm("Setujui panen ini?")) return;
 
@@ -110,18 +92,13 @@ export default function MandorPage() {
             setActionMsg("✅ Panen berhasil disetujui!");
             await fetchData();
         } catch (err) {
-            setActionMsg(
-                "❌ Gagal approve: " +
-                (err instanceof Error ? err.message : "")
-            );
+            // Disembunyikan error dari backend
+            setActionMsg("❌ Gagal menyetujui laporan. Silakan coba lagi.");
         } finally {
             setActionLoading(false);
         }
     };
 
-    // =========================
-    // REJECT
-    // =========================
     const handleRejectSubmit = async () => {
         if (!alasan.trim()) {
             setActionMsg("❌ Alasan penolakan wajib diisi");
@@ -142,10 +119,8 @@ export default function MandorPage() {
 
             await fetchData();
         } catch (err) {
-            setActionMsg(
-                "❌ Gagal reject: " +
-                (err instanceof Error ? err.message : "")
-            );
+            // Disembunyikan error dari backend
+            setActionMsg("❌ Gagal menolak laporan. Silakan coba lagi.");
         } finally {
             setActionLoading(false);
         }
@@ -165,10 +140,9 @@ export default function MandorPage() {
         <main className="min-h-screen bg-gray-50 p-8 text-black font-sans">
             <div className="mx-auto max-w-6xl">
 
-                {/* HEADER */}
                 <div className="mb-8 flex items-center justify-between">
                     <div>
-                        <h1 className="text-3xl font-bold text-blue-900">Dashboard Mandor</h1>
+                        <h1 className="text-3xl font-bold text-green-800">Dashboard Mandor</h1>
                     </div>
                     <button
                         onClick={() => router.push("/")}
@@ -178,12 +152,11 @@ export default function MandorPage() {
                     </button>
                 </div>
 
-                {/* SUMMARY CARDS */}
                 {!loading && (
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                         <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow p-4 text-center">
                             <p className="text-sm font-semibold text-gray-500 uppercase">Total Buruh</p>
-                            <p className="text-2xl font-bold text-blue-900 mt-1">{buruhList.length}</p>
+                            <p className="text-2xl font-bold text-green-800 mt-1">{buruhList.length}</p>
                         </div>
                         <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow p-4 text-center">
                             <p className="text-sm font-semibold text-gray-500 uppercase">Menunggu</p>
@@ -200,7 +173,6 @@ export default function MandorPage() {
                     </div>
                 )}
 
-                {/* FILTER SECTION */}
                 <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow mb-8">
                     <div className="border-b border-gray-200 bg-gray-50 p-4">
                         <h2 className="font-semibold text-gray-700">Filter Data Panen</h2>
@@ -212,7 +184,7 @@ export default function MandorPage() {
                             <select
                                 value={buruhId}
                                 onChange={(e) => setBuruhId(e.target.value)}
-                                className="border border-gray-300 rounded p-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 md:w-64 bg-white"
+                                className="border border-gray-300 rounded p-2 text-sm focus:outline-none focus:ring-1 focus:ring-green-500 md:w-64 bg-white"
                             >
                                 <option value="">Semua Buruh</option>
                                 {buruhList.map((b) => (
@@ -229,14 +201,14 @@ export default function MandorPage() {
                                 type="date"
                                 value={tanggalPanen}
                                 onChange={(e) => setTanggalPanen(e.target.value)}
-                                className="border border-gray-300 rounded p-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
+                                className="border border-gray-300 rounded p-2 text-sm focus:outline-none focus:ring-1 focus:ring-green-500 bg-white"
                             />
                         </div>
 
                         <div className="flex gap-2 w-full md:w-auto">
                             <button
                                 onClick={fetchData}
-                                className="bg-blue-900 text-white px-4 py-2 rounded text-sm hover:bg-blue-800 transition-colors"
+                                className="bg-green-800 text-white px-4 py-2 rounded text-sm hover:bg-green-900 transition-colors"
                             >
                                 Terapkan
                             </button>
@@ -253,7 +225,6 @@ export default function MandorPage() {
                     </div>
                 </div>
 
-                {/* NOTIFICATIONS */}
                 {actionMsg && (
                     <div className={`mb-8 p-4 rounded-lg border font-medium ${
                         actionMsg.startsWith("✅") ? "bg-green-50 border-green-200 text-green-700" : "bg-red-50 border-red-200 text-red-700"
@@ -262,7 +233,6 @@ export default function MandorPage() {
                     </div>
                 )}
 
-                {/* TABLE SECTION */}
                 <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow">
                     <div className="border-b border-gray-200 bg-gray-50 p-4">
                         <h2 className="font-semibold text-gray-700">Live Data Panen</h2>
@@ -314,7 +284,7 @@ export default function MandorPage() {
                                                 <div className="flex justify-end gap-3">
                                                     <button
                                                         onClick={() => router.push(`/harvest/${item.id}`)}
-                                                        className="text-blue-600 hover:text-blue-900 font-bold"
+                                                        className="text-green-600 hover:text-green-800 font-bold"
                                                     >
                                                         Detail
                                                     </button>
@@ -324,7 +294,7 @@ export default function MandorPage() {
                                                             <button
                                                                 onClick={() => handleApprove(item.id)}
                                                                 disabled={actionLoading}
-                                                                className="text-green-600 hover:text-green-900 font-bold disabled:opacity-50"
+                                                                className="text-green-600 hover:text-green-800 font-bold disabled:opacity-50"
                                                             >
                                                                 Approve
                                                             </button>
@@ -348,7 +318,6 @@ export default function MandorPage() {
                     </div>
                 </div>
 
-                {/* MODAL REJECT */}
                 {rejectId && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                         <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xl w-full max-w-md">
@@ -362,7 +331,7 @@ export default function MandorPage() {
                                 <textarea
                                     value={alasan}
                                     onChange={(e) => setAlasan(e.target.value)}
-                                    className="w-full border border-gray-300 rounded p-3 mb-4 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
+                                    className="w-full border border-gray-300 rounded p-3 mb-4 text-sm focus:outline-none focus:ring-1 focus:ring-green-500 bg-white"
                                     rows={3}
                                     placeholder="Masukkan alasan penolakan..."
                                 />
