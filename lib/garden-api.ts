@@ -69,10 +69,13 @@ export type KebunUpdatePayload = Omit<KebunCreatePayload, "kode">;
 
 // BASE CONFIG
 const isLocal =
-	typeof window !== "undefined" && window.location.hostname === "localhost";
+	typeof window !== "undefined" &&
+	(window.location.hostname === "localhost" ||
+		window.location.hostname === "127.0.0.1" ||
+		window.location.hostname.startsWith("192.168."));
 
 const API_BASE = isLocal
-	? "http://localhost:8082/api/kebun"
+	? `http://${typeof window !== "undefined" ? window.location.hostname : "localhost"}:8082/api/kebun`
 	: "https://mysawit-sawit.onrender.com/api/kebun";
 
 // TOKEN HELPER

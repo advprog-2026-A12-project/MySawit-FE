@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getStoredUser } from "@/lib/auth-api";
+import { getStoredUser, getUsers } from "@/lib/auth-api";
 import {
 	getKebunDetail,
 	getKebunList,
@@ -21,9 +21,23 @@ export default function MandorGardenPage() {
 	const [loadingList, setLoadingList] = useState(true);
 	const [loadingDetail, setLoadingDetail] = useState(false);
 	const [error, setError] = useState("");
+	const [supirMap, setSupirMap] = useState<Record<string, string>>({});
 
 	const cardCls = "rounded-2xl border border-green-200 bg-white p-5 shadow-sm";
 	const titleCls = "text-lg font-semibold text-green-900";
+
+	const fetchSupirNames = async () => {
+		try {
+			const sRes = await getUsers({ role: "SUPIR_TRUK", size: 100 });
+			const map: Record<string, string> = {};
+			for (const s of sRes.data.content) {
+				map[s.id] = s.name;
+			}
+			setSupirMap(map);
+		} catch {
+			// ignore auth API errors if any
+		}
+	};
 
 	const fetchList = async () => {
 		setLoadingList(true);
@@ -65,6 +79,7 @@ export default function MandorGardenPage() {
 		}
 
 		void fetchList();
+		void fetchSupirNames();
 	}, [authorized, router, user]);
 
 	if (!authorized) {
@@ -188,7 +203,7 @@ export default function MandorGardenPage() {
 										</div>
 										<div className="rounded-lg border border-green-100 bg-green-50/60 px-3 py-2 text-sm">
 											<p className="text-xs uppercase text-green-700">Mandor</p>
-											<p className="font-semibold text-gray-800">{detail.mandorName ?? "-"}</p>
+											<p className="font-semibold text-gray-800">{user?.name || detail.mandorName || detail.mandorId || "-"}</p>
 										</div>
 									</div>
 
@@ -208,12 +223,17 @@ export default function MandorGardenPage() {
 											<p className="mt-2 text-sm text-gray-500">Belum ada supir yang ditugaskan.</p>
 										) : (
 											<ul className="mt-2 space-y-2">
-												{detail.supirList.map((supir) => (
-													<li key={supir.id} className="rounded-lg bg-white px-3 py-2 text-sm shadow-sm">
-														<p className="font-medium text-gray-800">{supir.name ?? "Supir"}</p>
-														<p className="text-xs text-gray-500">{supir.email ?? supir.id}</p>
-													</li>
-												))}
+												{detail.supirList.map((supir) => {
+													const resolvedName = supir.name || supirMap[supir.id];
+													return (
+														<li key={supir.id} className="rounded-lg bg-white px-3 py-2 text-sm shadow-sm">
+															<p className="font-medium text-gray-800">
+																{resolvedName ? resolvedName : "Supir (ID: " + supir.id.substring(0,8) + ")"}
+															</p>
+															<p className="text-xs text-gray-500">{supir.email ?? supir.id}</p>
+														</li>
+													);
+												})}
 											</ul>
 										)}
 									</div>
@@ -226,3 +246,4 @@ export default function MandorGardenPage() {
 		</main>
 	);
 }
+

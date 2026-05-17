@@ -62,6 +62,12 @@ export default function Navbar() {
 					{ href: "/topup", label: "Top-up" },
 				]
 			: []),
+		...(userRole === "MANDOR"
+			? [{ href: "/garden/mandor", label: "Kebun Saya" }]
+			: []),
+		...(userRole === "SUPIR_TRUK"
+			? [{ href: "/garden/supir", label: "Kebun Saya" }]
+			: []),
 	];
 
 	async function handleLogout() {
