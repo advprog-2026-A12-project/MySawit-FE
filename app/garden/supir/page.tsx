@@ -188,7 +188,7 @@ export default function SupirGardenPage() {
 										</div>
 										<div className="rounded-lg border border-green-100 bg-green-50/60 px-3 py-2 text-sm">
 											<p className="text-xs uppercase text-green-700">Mandor</p>
-											<p className="font-semibold text-gray-800">{detail.mandorName ?? "-"}</p>
+											<p className="font-semibold text-gray-800">{detail.mandorName || (detail.mandorId ? "Mandor (ID: " + detail.mandorId.substring(0,8) + ")" : "-")}</p>
 										</div>
 									</div>
 
