@@ -24,6 +24,62 @@ const coordFields = [
 
 function num(v: string) { return Number.parseFloat(v); }
 
+const NAME_MIN = 3;
+const NAME_MAX = 100;
+const KODE_MAX = 50;
+const LUAS_MIN = 0.01;
+const LAT_MIN = -90;
+const LAT_MAX = 90;
+const LNG_MIN = -180;
+const LNG_MAX = 180;
+
+function validateKebunForm(form: FormState, opts?: { requireKode?: boolean }) {
+	const errors: string[] = [];
+	const nama = form.nama.trim();
+	if (nama.length < NAME_MIN) errors.push(`Nama kebun minimal ${NAME_MIN} karakter.`);
+	if (nama.length > NAME_MAX) errors.push(`Nama kebun maksimal ${NAME_MAX} karakter.`);
+
+	if (opts?.requireKode) {
+		const kode = form.kode.trim();
+		if (!kode) errors.push("Kode kebun wajib diisi.");
+		if (kode.length > KODE_MAX) errors.push(`Kode kebun maksimal ${KODE_MAX} karakter.`);
+	}
+
+	const luas = num(form.luasHektare);
+	if (!Number.isFinite(luas) || luas < LUAS_MIN) {
+		errors.push("Luas hektare harus lebih dari 0.");
+	}
+
+	const points: string[] = [];
+	for (const field of coordFields) {
+		const value = num(form[field.key]);
+		if (!Number.isFinite(value)) {
+			errors.push(`${field.label} wajib diisi.`);
+			continue;
+		}
+		if (field.key.endsWith("Lat") && (value < LAT_MIN || value > LAT_MAX)) {
+			errors.push(`${field.label} harus antara ${LAT_MIN} dan ${LAT_MAX}.`);
+		}
+		if (field.key.endsWith("Lng") && (value < LNG_MIN || value > LNG_MAX)) {
+			errors.push(`${field.label} harus antara ${LNG_MIN} dan ${LNG_MAX}.`);
+		}
+	}
+
+	if (errors.length === 0) {
+		for (let i = 1; i <= 4; i++) {
+			const lat = form[`coord${i}Lat` as keyof FormState];
+			const lng = form[`coord${i}Lng` as keyof FormState];
+			points.push(`${lat},${lng}`);
+		}
+		const unique = new Set(points);
+		if (unique.size < 4) {
+			errors.push("4 titik koordinat harus berbeda, tidak boleh ada titik yang sama.");
+		}
+	}
+
+	return errors.join(" | ");
+}
+
 export default function GardenPage() {
 	const [items, setItems] = useState<KebunSummary[]>([]);
 	const [selectedId, setSelectedId] = useState("");
@@ -39,11 +95,19 @@ export default function GardenPage() {
 	const [createForm, setCreateForm] = useState<FormState>(initialForm);
 	const [updateForm, setUpdateForm] = useState<FormState>(initialForm);
 
-	// Mandor/supir lists from Auth
 	const [mandorList, setMandorList] = useState<UserListItem[]>([]);
 	const [supirList, setSupirList] = useState<UserListItem[]>([]);
 	const [selMandorId, setSelMandorId] = useState("");
 	const [selSupirId, setSelSupirId] = useState("");
+
+	const [reassignModal, setReassignModal] = useState<{
+		open: boolean;
+		type: "mandor" | "supir";
+		userId: string;
+		userName: string;
+		sourceKebunId: string;
+	}>({ open: false, type: "mandor", userId: "", userName: "", sourceKebunId: "" });
+	const [reassignTargetKebunId, setReassignTargetKebunId] = useState("");
 
 	const hasSelected = useMemo(() => Boolean(selectedId), [selectedId]);
 
@@ -58,7 +122,14 @@ export default function GardenPage() {
 		setLoadingList(true); setErr("");
 		try {
 			const r = await getKebunList({ nama, kode });
-			setItems(Array.isArray(r.data) ? r.data : []);
+			const data = Array.isArray(r.data) ? [...r.data] : [];
+			data.sort((a, b) => {
+				const aTime = Number.isNaN(Date.parse(a.createdAt)) ? 0 : Date.parse(a.createdAt);
+				const bTime = Number.isNaN(Date.parse(b.createdAt)) ? 0 : Date.parse(b.createdAt);
+				if (aTime !== bTime) return bTime - aTime;
+				return a.kode.localeCompare(b.kode);
+			});
+			setItems(data);
 		} catch (e) { setErr(e instanceof Error ? e.message : "Gagal memuat kebun"); }
 		finally { setLoadingList(false); }
 	};
@@ -100,7 +171,10 @@ export default function GardenPage() {
 	};
 
 	const submitCreate = async (e: FormEvent<HTMLFormElement>) => {
-		e.preventDefault(); setBusy(true); setMsg(""); setErr("");
+		e.preventDefault(); setMsg(""); setErr("");
+		const validationError = validateKebunForm(createForm, { requireKode: true });
+		if (validationError) { setErr(validationError); return; }
+		setBusy(true);
 		try {
 			const p: KebunCreatePayload = {
 				nama: createForm.nama.trim(), kode: createForm.kode.trim(),
@@ -119,7 +193,10 @@ export default function GardenPage() {
 
 	const submitUpdate = async (e: FormEvent<HTMLFormElement>) => {
 		e.preventDefault(); if (!selectedId) return;
-		setBusy(true); setMsg(""); setErr("");
+		setMsg(""); setErr("");
+		const validationError = validateKebunForm(updateForm);
+		if (validationError) { setErr(validationError); return; }
+		setBusy(true);
 		try {
 			const p: KebunUpdatePayload = {
 				nama: updateForm.nama.trim(), luasHektare: num(updateForm.luasHektare),
@@ -155,14 +232,49 @@ export default function GardenPage() {
 		finally { setBusy(false); }
 	};
 
-	const handleUnassignMandor = async () => {
-		if (!selectedId || !confirm("Yakin copot mandor dari kebun ini?")) return;
+	const openReassignMandorModal = () => {
+		if (!selectedId || !detail?.mandorId) return;
+		setReassignModal({
+			open: true,
+			type: "mandor",
+			userId: detail.mandorId,
+			userName: detail.mandorName ?? "Mandor",
+			sourceKebunId: selectedId,
+		});
+		setReassignTargetKebunId("");
+	};
+
+	const openReassignSupirModal = (supirId: string, supirName: string) => {
+		if (!selectedId) return;
+		setReassignModal({
+			open: true,
+			type: "supir",
+			userId: supirId,
+			userName: supirName || "Supir",
+			sourceKebunId: selectedId,
+		});
+		setReassignTargetKebunId("");
+	};
+
+	const confirmReassign = async () => {
+		if (!reassignTargetKebunId) return;
 		setBusy(true); setMsg(""); setErr("");
 		try {
-			await unassignMandor(selectedId);
-			setMsg("Mandor berhasil dicopot!"); await fetchDetail(selectedId); await fetchList(searchNama, searchKode);
-		} catch (e) { setErr(e instanceof Error ? e.message : "Gagal unassign mandor"); }
-		finally { setBusy(false); }
+			if (reassignModal.type === "mandor") {
+				await unassignMandor(reassignModal.sourceKebunId);
+				await assignMandor(reassignTargetKebunId, reassignModal.userId);
+				setMsg("Mandor berhasil dipindahkan ke kebun lain!");
+			} else {
+				await unassignSupir(reassignModal.sourceKebunId, reassignModal.userId);
+				await assignSupir(reassignTargetKebunId, reassignModal.userId);
+				setMsg("Supir berhasil dipindahkan ke kebun lain!");
+			}
+			setReassignModal((m) => ({ ...m, open: false }));
+			await fetchDetail(selectedId);
+			await fetchList(searchNama, searchKode);
+		} catch (e) {
+			setErr(e instanceof Error ? e.message : "Gagal memindahkan");
+		} finally { setBusy(false); }
 	};
 
 	const handleAssignSupir = async () => {
@@ -170,18 +282,11 @@ export default function GardenPage() {
 		setBusy(true); setMsg(""); setErr("");
 		try {
 			await assignSupir(selectedId, selSupirId);
-			setMsg("Supir berhasil ditugaskan!"); setSelSupirId(""); await fetchDetail(selectedId); await fetchList(searchNama, searchKode);
+			setMsg("Supir berhasil ditugaskan!");
+			setSelSupirId("");
+			await fetchDetail(selectedId);
+			await fetchList(searchNama, searchKode);
 		} catch (e) { setErr(e instanceof Error ? e.message : "Gagal assign supir"); }
-		finally { setBusy(false); }
-	};
-
-	const handleUnassignSupir = async (supirId: string) => {
-		if (!selectedId || !confirm("Yakin copot supir ini dari kebun?")) return;
-		setBusy(true); setMsg(""); setErr("");
-		try {
-			await unassignSupir(selectedId, supirId);
-			setMsg("Supir berhasil dicopot!"); await fetchDetail(selectedId); await fetchList(searchNama, searchKode);
-		} catch (e) { setErr(e instanceof Error ? e.message : "Gagal unassign supir"); }
 		finally { setBusy(false); }
 	};
 
@@ -268,14 +373,17 @@ export default function GardenPage() {
 							<div className="grid gap-3 md:grid-cols-2">
 								<input value={createForm.nama} onChange={(e) => setCreateForm((p) => ({ ...p, nama: e.target.value }))} placeholder="Nama kebun" required className={inputCls} />
 								<input value={createForm.kode} onChange={(e) => setCreateForm((p) => ({ ...p, kode: e.target.value }))} placeholder="Kode kebun" required className={inputCls} />
-								<input value={createForm.luasHektare} onChange={(e) => setCreateForm((p) => ({ ...p, luasHektare: e.target.value }))} placeholder="Luas (Ha)" type="number" step="0.01" required className={inputCls} />
+								<input value={createForm.luasHektare} onChange={(e) => setCreateForm((p) => ({ ...p, luasHektare: e.target.value }))} placeholder="Luas (Ha)" type="number" step="0.01" min={LUAS_MIN} required className={inputCls} />
 							</div>
 							<p className="text-xs font-medium uppercase tracking-wide text-gray-500">4 Titik Koordinat</p>
 							<div className="grid gap-2 md:grid-cols-2">
-								{coordFields.map((f) => (
-									<input key={f.key} value={createForm[f.key]} onChange={(e) => setCreateForm((p) => ({ ...p, [f.key]: e.target.value }))}
-										placeholder={f.label} type="number" step="0.000001" required className={inputCls} />
-								))}
+								{coordFields.map((f) => {
+									const isLat = f.key.endsWith("Lat");
+									return (
+										<input key={f.key} value={createForm[f.key]} onChange={(e) => setCreateForm((p) => ({ ...p, [f.key]: e.target.value }))}
+											placeholder={f.label} type="number" step="0.000001" min={isLat ? LAT_MIN : LNG_MIN} max={isLat ? LAT_MAX : LNG_MAX} required className={inputCls} />
+									);
+								})}
 							</div>
 							<button type="submit" disabled={busy} className={`w-full ${btnPrimary}`}>{busy ? "Menyimpan..." : "Simpan Kebun"}</button>
 						</form>
@@ -295,13 +403,16 @@ export default function GardenPage() {
 										<div className="grid gap-3 md:grid-cols-2">
 											<input value={updateForm.nama} onChange={(e) => setUpdateForm((p) => ({ ...p, nama: e.target.value }))} placeholder="Nama" required className={inputCls} />
 											<input value={updateForm.kode} readOnly className={roCls} />
-											<input value={updateForm.luasHektare} onChange={(e) => setUpdateForm((p) => ({ ...p, luasHektare: e.target.value }))} placeholder="Luas (Ha)" type="number" step="0.01" required className={inputCls} />
+											<input value={updateForm.luasHektare} onChange={(e) => setUpdateForm((p) => ({ ...p, luasHektare: e.target.value }))} placeholder="Luas (Ha)" type="number" step="0.01" min={LUAS_MIN} required className={inputCls} />
 										</div>
 										<div className="grid gap-2 md:grid-cols-2">
-											{coordFields.map((f) => (
-												<input key={f.key} value={updateForm[f.key]} onChange={(e) => setUpdateForm((p) => ({ ...p, [f.key]: e.target.value }))}
-													placeholder={f.label} type="number" step="0.000001" required className={inputCls} />
-											))}
+											{coordFields.map((f) => {
+												const isLat = f.key.endsWith("Lat");
+												return (
+													<input key={f.key} value={updateForm[f.key]} onChange={(e) => setUpdateForm((p) => ({ ...p, [f.key]: e.target.value }))}
+														placeholder={f.label} type="number" step="0.000001" min={isLat ? LAT_MIN : LNG_MIN} max={isLat ? LAT_MAX : LNG_MAX} required className={inputCls} />
+												);
+											})}
 										</div>
 										<div className="flex gap-2">
 											<button type="submit" disabled={busy} className={`flex-1 ${btnAmber}`}>{busy ? "Menyimpan..." : "Update Kebun"}</button>
@@ -318,7 +429,7 @@ export default function GardenPage() {
 													<p className="text-sm font-medium text-gray-800">{detail.mandorName ?? "—"}</p>
 													<p className="text-xs text-gray-500">{detail.mandorEmail ?? detail.mandorId}</p>
 												</div>
-												<button onClick={() => { void handleUnassignMandor(); }} disabled={busy} className="rounded-lg border border-red-300 bg-red-50 px-3 py-1 text-xs font-medium text-red-700 hover:bg-red-100 disabled:opacity-60">
+												<button onClick={openReassignMandorModal} disabled={busy} className="rounded-lg border border-red-300 bg-red-50 px-3 py-1 text-xs font-medium text-red-700 hover:bg-red-100 disabled:opacity-60">
 													Copot
 												</button>
 											</div>
@@ -352,7 +463,7 @@ export default function GardenPage() {
 															<span className="font-medium text-gray-800">{s.name ?? "—"}</span>
 															<span className="ml-2 text-xs text-gray-500">{s.email ?? ""}</span>
 														</div>
-														<button onClick={() => { void handleUnassignSupir(s.id); }} disabled={busy} className="rounded border border-red-300 bg-red-50 px-2 py-0.5 text-xs text-red-700 hover:bg-red-100 disabled:opacity-60">
+														<button onClick={() => openReassignSupirModal(s.id, s.name ?? "")} disabled={busy} className="rounded border border-red-300 bg-red-50 px-2 py-0.5 text-xs text-red-700 hover:bg-red-100 disabled:opacity-60">
 															Copot
 														</button>
 													</li>
@@ -376,6 +487,50 @@ export default function GardenPage() {
 						</div>
 					</div>
 				</section>
+
+				{reassignModal.open && (
+					<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+						<div className="w-full max-w-md rounded-2xl border border-green-200 bg-white p-6 shadow-xl">
+							<h3 className="text-lg font-bold text-green-900">
+								Pindahkan {reassignModal.type === "mandor" ? "Mandor" : "Supir"}
+							</h3>
+							<p className="mt-1 text-sm text-gray-600">
+								<strong>{reassignModal.userName}</strong> akan dicopot dari kebun ini.
+								Pilih kebun tujuan baru untuk menugaskan kembali.
+							</p>
+							<select
+								value={reassignTargetKebunId}
+								onChange={(e) => setReassignTargetKebunId(e.target.value)}
+								className="mt-4 w-full rounded-lg border border-green-200 bg-white px-3 py-2 text-sm text-gray-800 outline-none ring-green-300 focus:ring"
+							>
+								<option value="">— Pilih Kebun Tujuan —</option>
+								{items
+									.filter((k) => k.id !== reassignModal.sourceKebunId)
+									.map((k) => (
+										<option key={k.id} value={k.id}>
+											{k.nama} ({k.kode})
+										</option>
+									))}
+							</select>
+							<div className="mt-5 flex gap-3">
+								<button
+									onClick={() => setReassignModal((m) => ({ ...m, open: false }))}
+									disabled={busy}
+									className="flex-1 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:opacity-60"
+								>
+									Batal
+								</button>
+								<button
+									onClick={() => { void confirmReassign(); }}
+									disabled={busy || !reassignTargetKebunId}
+									className="flex-1 rounded-lg bg-green-700 px-4 py-2 text-sm font-medium text-white transition hover:bg-green-800 disabled:cursor-not-allowed disabled:bg-green-400"
+								>
+									{busy ? "Memproses..." : "Pindahkan"}
+								</button>
+							</div>
+						</div>
+					</div>
+				)}
 			</div>
 		</main>
 	);
