@@ -2,7 +2,6 @@ import { ApiError, ApiResponse, PaginatedResponse, getAccessToken } from "@/lib/
 
 export interface WageConfigUser {
   id: string;
-  name: string;
 }
 
 export interface PreviousWageConfig {
@@ -20,7 +19,7 @@ export interface WageConfig {
   upahMandorPerKg: number;
   currency: string;
   isActive: boolean;
-  previousConfig?: PreviousWageConfig;
+  previousConfig?: PreviousWageConfig | null;
   updatedBy: WageConfigUser;
   effectiveFrom: string;
   createdAt?: string;
