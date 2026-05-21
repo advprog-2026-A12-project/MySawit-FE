@@ -6,13 +6,13 @@ export type PayrollReferenceType = "HARVEST" | "DELIVERY";
 
 export interface PayrollUser {
   id: string;
-  name: string;
   role: PayrollUserRole;
+  name?: string;
 }
 
 export interface PayrollApprover {
   id: string;
-  name: string;
+  name?: string;
 }
 
 export interface Payroll {
@@ -59,12 +59,12 @@ export interface PayrollListParams {
   page?: number;
   size?: number;
   sort?: string;
+  userId?: string;
   status?: PayrollStatus;
   userRole?: PayrollUserRole;
   referenceType?: PayrollReferenceType;
   dateFrom?: string;
   dateTo?: string;
-  userName?: string;
 }
 
 export interface MyPayrollListParams {
@@ -140,12 +140,12 @@ function buildPayrollQuery(params?: PayrollListParams) {
   if (typeof params?.page === "number") query.set("page", String(params.page));
   if (typeof params?.size === "number") query.set("size", String(params.size));
   if (params?.sort) query.set("sort", params.sort);
+  if (params?.userId) query.set("userId", params.userId);
   if (params?.status) query.set("status", params.status);
   if (params?.userRole) query.set("userRole", params.userRole);
   if (params?.referenceType) query.set("referenceType", params.referenceType);
   if (params?.dateFrom) query.set("dateFrom", params.dateFrom);
   if (params?.dateTo) query.set("dateTo", params.dateTo);
-  if (params?.userName) query.set("userName", params.userName);
 
   return query.toString();
 }
