@@ -4,7 +4,7 @@ export type TopupStatus = "PENDING" | "SUCCESS" | "FAILED" | "EXPIRED";
 
 export interface TopupAdmin {
   id: string;
-  name: string;
+  name?: string;
 }
 
 export interface TopupTransaction {
@@ -16,8 +16,8 @@ export interface TopupTransaction {
   paymentGateway: string;
   gatewayReferenceId?: string;
   status: TopupStatus;
-  paymentUrl?: string;
-  expiresAt?: string;
+  paymentUrl?: string | null;
+  expiresAt?: string | null;
   createdAt: string;
   updatedAt?: string;
 }
