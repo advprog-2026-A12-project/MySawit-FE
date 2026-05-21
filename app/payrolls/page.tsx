@@ -171,11 +171,18 @@ export default function PayrollsPage() {
   });
 
   const detailUserId = detailQuery.data?.user?.id;
+  const detailApproverId = detailQuery.data?.approvedBy?.id;
 
   const detailUserQuery = useQuery({
     queryKey: ["users", "detail", detailUserId],
     queryFn: () => getUserDetail(detailUserId as string).then((response) => response.data),
     enabled: Boolean(isAdmin && detailUserId),
+  });
+
+  const detailApproverQuery = useQuery({
+    queryKey: ["users", "detail", detailApproverId],
+    queryFn: () => getUserDetail(detailApproverId as string).then((response) => response.data),
+    enabled: Boolean(isAdmin && detailApproverId),
   });
 
   const acceptMutation = useMutation({
@@ -275,6 +282,7 @@ export default function PayrollsPage() {
   const totalPages = Math.max(payrollData?.totalPages ?? 1, 1);
   const detailPayroll = detailQuery.data;
   const detailUser = detailUserQuery.data;
+  const detailApprover = detailApproverQuery.data;
 
   return (
     <main className="min-h-screen bg-green-50 p-4 sm:p-8">
@@ -709,6 +717,23 @@ export default function PayrollsPage() {
                       <dt className="text-gray-500">Disetujui/Ditolak</dt>
                       <dd className="mt-1 font-semibold text-gray-900">{formatDateTime(detailPayroll.approvedAt)}</dd>
                     </div>
+                    {isAdmin && (
+                      <div className="rounded-lg border border-gray-200 p-4">
+                        <dt className="text-gray-500">Diproses oleh</dt>
+                        <dd className="mt-1 font-semibold text-gray-900">
+                          {!detailPayroll.approvedBy?.id
+                            ? "-"
+                            : detailApproverQuery.isLoading
+                            ? "Memuat admin..."
+                            : detailApprover
+                            ? detailApprover.name
+                            : "Admin"}
+                        </dd>
+                        {detailApproverQuery.isError && (
+                          <p className="mt-1 text-xs text-red-600">Nama admin belum bisa dimuat dari auth service.</p>
+                        )}
+                      </div>
+                    )}
                   </dl>
 
                   <div className="rounded-lg border border-gray-200 p-4">
