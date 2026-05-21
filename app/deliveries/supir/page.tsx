@@ -1,51 +1,31 @@
 "use client";
 
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { getStoredUser, getAccessToken } from '@/lib/auth-api';
-
-interface Delivery {
-    id: string;
-    mandorName: string;
-    payloadKg: number;
-    status: string;
-    createdAt: string;
-}
+import { getStoredUser } from '@/lib/auth-api';
+import { getSupirTasks, Delivery, advanceDeliveryStatus } from '@/lib/delivery-api';
+import { StatusBadge } from '@/app/components/delivery/StatusBadge';
 
 export default function SupirDeliveryPage() {
     const router = useRouter();
-
     const user = useMemo(() => getStoredUser(), []);
     const authorized = user?.role === 'SUPIR_TRUK';
 
     const [loading, setLoading] = useState(true);
     const [tasks, setTasks] = useState<Delivery[]>([]);
-    const [msg, setMsg] = useState({ text: "", type: "" });
-    const [isUpdating, setIsUpdating] = useState(false);
+    const [errorMsg, setErrorMsg] = useState("");
+    const [updatingId, setUpdatingId] = useState<string | null>(null);
 
-    const fetchTasks = useCallback(async () => {
-        setLoading(true);
+    const fetchTasks = async () => {
         try {
-            const baseUrl = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8082';
-            const res = await fetch(`${baseUrl}/api/deliveries/supir-tasks`, {
-                headers: {
-                    'Authorization': `Bearer ${getAccessToken()}`,
-                    'X-User-Id': user?.id || '',
-                    'X-User-Role': user?.role || ''
-                }
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setTasks(data);
-            } else {
-                throw new Error("Gagal mengambil data tugas");
-            }
-        } catch (error: unknown) {
-            setMsg({ text: error instanceof Error ? error.message : "Gagal terhubung ke backend", type: "error" });
+            const data = await getSupirTasks();
+            setTasks(data);
+        } catch (err: any) {
+            setErrorMsg(err.message || 'Gagal memuat tugas pengiriman');
         } finally {
             setLoading(false);
         }
-    }, [user?.id, user?.role]);
+    };
 
     useEffect(() => {
         if (!authorized) {
@@ -53,114 +33,113 @@ export default function SupirDeliveryPage() {
             return;
         }
         fetchTasks();
-    }, [authorized, router, fetchTasks]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [authorized, router]);
 
-    const handleUpdateStatus = async (id: string, currentStatus: string) => {
-        if (isUpdating) return;
-        setMsg({ text: "", type: "" });
-        
-        const isMulai = currentStatus === "MEMUAT";
-        const promptMsg = isMulai ? "Mulai perjalanan pengiriman sekarang?" : "Konfirmasi Anda telah tiba di tujuan?";
-        if (!window.confirm(promptMsg)) return;
-
-        setIsUpdating(true);
+    const handleQuickAction = async (e: React.MouseEvent, id: string) => {
+        e.stopPropagation(); // prevent navigation to detail page
         try {
-            const baseUrl = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8082';
-            const res = await fetch(`${baseUrl}/api/deliveries/${id}/status`, {
-                method: 'PATCH',
-                headers: {
-                    'Authorization': `Bearer ${getAccessToken()}`,
-                    'X-User-Id': user?.id || '',
-                    'X-User-Role': user?.role || ''
-                }
-            });
-
-            if (!res.ok) {
-                const errText = await res.text();
-                throw new Error(errText || "Gagal mengubah status");
-            }
-
-            setMsg({ text: "Status berhasil diupdate!", type: "success" });
-            fetchTasks();
-        } catch (error: unknown) {
-            setMsg({ text: error instanceof Error ? error.message : "Terjadi kesalahan", type: "error" });
+            setUpdatingId(id);
+            await advanceDeliveryStatus(id);
+            await fetchTasks();
+        } catch (err: any) {
+            alert(err.message || "Gagal mengupdate status");
         } finally {
-            setIsUpdating(false);
+            setUpdatingId(null);
         }
     };
 
     if (!authorized) return <div className="p-8 text-center">Memverifikasi akses Anda...</div>;
+    if (loading) return <div className="p-8 text-center flex justify-center mt-20"><div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div></div>;
+
+    // Separate active tasks from completed
+    const activeTasks = tasks.filter(t => t.status !== 'TIBA_DI_TUJUAN');
+    const completedTasks = tasks.filter(t => t.status === 'TIBA_DI_TUJUAN');
 
     return (
-        <main className="min-h-screen bg-gray-50 p-8">
+        <main className="min-h-screen bg-gray-50 p-4 md:p-8 pb-20">
             <div className="max-w-4xl mx-auto">
-                <header className="mb-8">
-                    <h1 className="text-3xl font-bold text-blue-800">Dashboard Supir: Tugas Pengiriman</h1>
-                    <p className="text-gray-600 mt-2">Selamat bekerja, {user?.name}. Periksa dan perbarui status keberangkatan logistik Anda di sini.</p>
-                </header>
-
-                {msg.text && (
-                    <div className={`px-4 py-3 rounded mb-6 border ${msg.type === 'error' ? 'bg-red-100 border-red-400 text-red-700' : 'bg-green-100 border-green-400 text-green-700'}`}>
-                        {msg.text}
+                <div className="mb-8">
+                    <h1 className="text-2xl font-bold text-gray-900">Tugas Saya</h1>
+                    <p className="text-gray-500 mt-1">Daftar muatan yang harus Anda kirim.</p>
+                </div>
+                
+                {errorMsg && (
+                    <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-2xl mb-6">
+                        {errorMsg}
                     </div>
                 )}
-
-                {loading ? (
-                    <div className="text-center py-10 bg-white shadow rounded border border-gray-200">Loading tugas...</div>
-                ) : (
-                    <div className="grid gap-6">
-                        {tasks.length > 0 ? tasks.map(task => (
-                            <div key={task.id} className="bg-white p-6 rounded-lg shadow border border-gray-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:border-blue-300 transition">
+                
+                <h2 className="text-sm font-bold uppercase tracking-wider text-gray-500 mb-4 px-1">Tugas Aktif ({activeTasks.length})</h2>
+                
+                <div className="space-y-4 mb-8">
+                    {activeTasks.length > 0 ? activeTasks.map(t => (
+                        <div 
+                            key={t.id} 
+                            onClick={() => router.push(`/deliveries/${t.id}`)}
+                            className="bg-white p-5 rounded-2xl border border-gray-200 cursor-pointer hover:bg-gray-50 transition-all active:scale-[0.98]"
+                        >
+                            <div className="flex justify-between items-start mb-4">
                                 <div>
-                                    <div className="flex items-center gap-3 mb-2">
-                                        <h3 className="text-lg font-bold text-gray-800">Tugas dari: {task.mandorName}</h3>
-                                        <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                            ${task.status === 'MEMUAT' ? 'bg-yellow-100 text-yellow-800' :
-                                              task.status === 'MENGIRIM' ? 'bg-blue-100 text-blue-800' :
-                                                  'bg-green-100 text-green-800'}`}>
-                                            Status: {task.status}
-                                        </span>
+                                    <p className="text-xs text-gray-500 font-mono mb-1">ID: {t.id.substring(0,8)}</p>
+                                    <h3 className="text-lg font-bold text-gray-900">{t.payloadKg} Kg</h3>
+                                </div>
+                                <StatusBadge status={t.status} type="delivery" />
+                            </div>
+                            
+                            <div className="flex items-center gap-2 text-sm text-gray-600 mb-5">
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                {new Date(t.tanggal || t.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'long' })}
+                            </div>
+                            
+                            <button 
+                                onClick={(e) => handleQuickAction(e, t.id)}
+                                disabled={updatingId === t.id}
+                                className="w-full py-3 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 disabled:opacity-70 text-white font-semibold rounded-xl flex items-center justify-center gap-2 transition-colors"
+                            >
+                                {updatingId === t.id ? (
+                                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                ) : (
+                                    <>
+                                        {t.status === 'MEMUAT' ? 'Mulai Mengirim' : 'Tandai Tiba di Tujuan'}
+                                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                                        </svg>
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    )) : (
+                        <div className="bg-white p-8 rounded-2xl border border-dashed border-gray-300 text-center text-gray-500">
+                            Tidak ada tugas aktif saat ini.
+                        </div>
+                    )}
+                </div>
+
+                {completedTasks.length > 0 && (
+                    <>
+                        <h2 className="text-sm font-bold uppercase tracking-wider text-gray-500 mb-4 px-1 mt-10">Selesai Dikirim</h2>
+                        <div className="space-y-4 opacity-75">
+                            {completedTasks.map(t => (
+                                <div 
+                                    key={t.id} 
+                                    onClick={() => router.push(`/deliveries/${t.id}`)}
+                                    className="bg-gray-50 p-4 rounded-xl border border-gray-200 cursor-pointer flex justify-between items-center"
+                                >
+                                    <div>
+                                        <p className="text-xs text-gray-500 font-mono mb-1">ID: {t.id.substring(0,8)}</p>
+                                        <p className="font-semibold text-gray-700">{t.payloadKg} Kg</p>
                                     </div>
-                                    <p className="text-sm text-gray-500">ID Pengiriman: {task.id}</p>
-                                    <p className="text-sm font-medium text-gray-700 mt-2">
-                                        Total Muatan: <span className="text-blue-600">{task.payloadKg} Kg</span>
-                                    </p>
+                                    <div className="flex flex-col items-end gap-2">
+                                        <StatusBadge status={t.status} type="delivery" />
+                                        <StatusBadge status={t.approvalStatus} type="approval" />
+                                    </div>
                                 </div>
-
-                                <div>
-                                    {task.status === 'MEMUAT' && (
-                                        <button 
-                                            disabled={isUpdating}
-                                            onClick={() => handleUpdateStatus(task.id, 'MEMUAT')}
-                                            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg transition disabled:opacity-50 shadow-sm"
-                                        >
-                                            Berangkat Mengirim
-                                        </button>
-                                    )}
-                                    {task.status === 'MENGIRIM' && (
-                                        <button 
-                                            disabled={isUpdating}
-                                            onClick={() => handleUpdateStatus(task.id, 'MENGIRIM')}
-                                            className="bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-6 rounded-lg transition disabled:opacity-50 shadow-sm"
-                                        >
-                                            Tiba di Tujuan
-                                        </button>
-                                    )}
-                                    {task.status === 'TIBA_DI_TUJUAN' && (
-                                        <div className="text-green-600 font-semibold bg-green-50 px-4 py-2 rounded border border-green-100">
-                                            ✔ Selesai
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        )) : (
-                            <div className="bg-white p-10 rounded-lg shadow border border-gray-200 text-center text-gray-500 flex flex-col items-center">
-                                <svg className="w-16 h-16 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 12H4M8 16l-4-4 4-4"></path></svg>
-                                <p className="text-lg font-medium text-gray-600">Hore! Belum ada tugas saat ini.</p>
-                                <p className="text-sm">Bila Anda ditugaskan oleh Mandor, tugas akan muncul di sini.</p>
-                            </div>
-                        )}
-                    </div>
+                            ))}
+                        </div>
+                    </>
                 )}
             </div>
         </main>
