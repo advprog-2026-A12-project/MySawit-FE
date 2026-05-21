@@ -128,22 +128,30 @@ export default function UserPage() {
         const isDeleting = deleteMutation.isPending && deleteMutation.variables === row.original.id;
 
         return (
-          <button
-            type="button"
-            disabled={isDeleting}
-            onClick={() => {
-              const isConfirmed = window.confirm(
-                `Hapus user ${row.original.name}? User akan dinonaktifkan (soft delete).`
-              );
+          <div className="flex items-center gap-2">
+            <Link
+              href={`/user/${row.original.id}`}
+              className="rounded-md border border-green-200 px-3 py-1.5 text-xs font-semibold text-green-700 hover:bg-green-50"
+            >
+              Profile
+            </Link>
+            <button
+              type="button"
+              disabled={isDeleting}
+              onClick={() => {
+                const isConfirmed = window.confirm(
+                  `Hapus user ${row.original.name}? User akan dinonaktifkan (soft delete).`
+                );
 
-              if (isConfirmed) {
-                deleteMutation.mutate(row.original.id);
-              }
-            }}
-            className="rounded-md border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {isDeleting ? "Menghapus..." : "Hapus"}
-          </button>
+                if (isConfirmed) {
+                  deleteMutation.mutate(row.original.id);
+                }
+              }}
+              className="rounded-md border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isDeleting ? "Menghapus..." : "Hapus"}
+            </button>
+          </div>
         );
       },
     }),
@@ -407,6 +415,7 @@ export default function UserPage() {
             </div>
           </div>
         </section>
+
       </div>
     </main>
   );

@@ -3,6 +3,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import { useState } from "react";
+import { ToastProvider } from "./components/ToastProvider";
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -20,7 +21,11 @@ export default function Providers({ children }: { children: React.ReactNode }) {
 
   const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 
-  const appContent = <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+  const appContent = (
+    <QueryClientProvider client={queryClient}>
+      <ToastProvider>{children}</ToastProvider>
+    </QueryClientProvider>
+  );
 
   if (!googleClientId) {
     return appContent;
