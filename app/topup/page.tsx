@@ -40,7 +40,7 @@ function statusBadge(status: TopupStatus) {
   }
 }
 
-function formatDateTime(value?: string) {
+function formatDateTime(value?: string | null) {
   if (!value) return "-";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "-";
@@ -389,6 +389,9 @@ export default function TopupPage() {
                     Dibuat
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">
+                    Expired
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">
                     Aksi
                   </th>
                 </tr>
@@ -397,13 +400,13 @@ export default function TopupPage() {
               <tbody className="divide-y divide-gray-100 bg-white">
                 {historyQuery.isLoading ? (
                   <tr>
-                    <td colSpan={6} className="px-6 py-10 text-center text-sm text-gray-500">
+                    <td colSpan={7} className="px-6 py-10 text-center text-sm text-gray-500">
                       Memuat riwayat top-up...
                     </td>
                   </tr>
                 ) : historyItems.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-6 py-10 text-center text-sm text-gray-500">
+                    <td colSpan={7} className="px-6 py-10 text-center text-sm text-gray-500">
                       Belum ada riwayat top-up.
                     </td>
                   </tr>
@@ -431,14 +434,29 @@ export default function TopupPage() {
                       <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-700">
                         {formatDateTime(topup.createdAt)}
                       </td>
+                      <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-700">
+                        {formatDateTime(topup.expiresAt)}
+                      </td>
                       <td className="whitespace-nowrap px-4 py-3 text-sm">
-                        <button
-                          type="button"
-                          onClick={() => setSelectedTopupId(topup.id)}
-                          className="rounded-md border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50"
-                        >
-                          Detail
-                        </button>
+                        <div className="flex items-center gap-2">
+                          {topup.paymentUrl && topup.status === "PENDING" && (
+                            <a
+                              href={topup.paymentUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="rounded-md border border-blue-200 px-3 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-50"
+                            >
+                              Bayar
+                            </a>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => setSelectedTopupId(topup.id)}
+                            className="rounded-md border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+                          >
+                            Detail
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -519,7 +537,7 @@ export default function TopupPage() {
                   <dl className="space-y-3 text-sm">
                     <div className="flex items-start justify-between gap-3 border-b border-gray-100 pb-2">
                       <dt className="text-gray-500">Admin</dt>
-                      <dd className="font-medium text-gray-900">{selectedTopup.admin?.name ?? "-"}</dd>
+                      <dd className="font-medium text-gray-900">{selectedTopup.admin?.name ?? "Admin"}</dd>
                     </div>
                     <div className="flex items-start justify-between gap-3 border-b border-gray-100 pb-2">
                       <dt className="text-gray-500">Rupiah</dt>
@@ -554,8 +572,29 @@ export default function TopupPage() {
                       </dd>
                     </div>
                     <div className="flex items-start justify-between gap-3 border-b border-gray-100 pb-2">
+                      <dt className="text-gray-500">Payment Link</dt>
+                      <dd className="font-medium text-gray-900">
+                        {selectedTopup.paymentUrl ? (
+                          <a
+                            href={selectedTopup.paymentUrl}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-blue-700 hover:text-blue-800 hover:underline"
+                          >
+                            Buka Xendit
+                          </a>
+                        ) : (
+                          "-"
+                        )}
+                      </dd>
+                    </div>
+                    <div className="flex items-start justify-between gap-3 border-b border-gray-100 pb-2">
                       <dt className="text-gray-500">Dibuat</dt>
                       <dd className="font-medium text-gray-900">{formatDateTime(selectedTopup.createdAt)}</dd>
+                    </div>
+                    <div className="flex items-start justify-between gap-3 border-b border-gray-100 pb-2">
+                      <dt className="text-gray-500">Expired</dt>
+                      <dd className="font-medium text-gray-900">{formatDateTime(selectedTopup.expiresAt)}</dd>
                     </div>
                     <div className="flex items-start justify-between gap-3">
                       <dt className="text-gray-500">Diperbarui</dt>
