@@ -179,7 +179,6 @@ export default function WageConfigPage() {
                 Kelola rate pembayaran per kilogram untuk payroll berikutnya.
               </p>
             </div>
-
           </div>
         </section>
 
@@ -239,14 +238,14 @@ export default function WageConfigPage() {
 
                 <dl className="grid gap-3 text-sm sm:grid-cols-2">
                   <div className="rounded-lg border border-gray-200 p-4">
-                    <dt className="text-gray-500">Diperbarui oleh</dt>
-                    <dd className="mt-1 font-semibold text-gray-900">{activeConfig.updatedBy.name}</dd>
-                  </div>
-                  <div className="rounded-lg border border-gray-200 p-4">
                     <dt className="text-gray-500">Berlaku sejak</dt>
                     <dd className="mt-1 font-semibold text-gray-900">
                       {formatDateTime(activeConfig.effectiveFrom)}
                     </dd>
+                  </div>
+                  <div className="rounded-lg border border-gray-200 p-4">
+                    <dt className="text-gray-500">Dibuat</dt>
+                    <dd className="mt-1 font-semibold text-gray-900">{formatDateTime(activeConfig.createdAt)}</dd>
                   </div>
                 </dl>
               </div>
@@ -333,76 +332,45 @@ export default function WageConfigPage() {
             </div>
           )}
 
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-green-100/60">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">
-                    Status
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">
-                    Buruh
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">
-                    Supir
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">
-                    Mandor
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">
-                    Updated By
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">
-                    Effective From
-                  </th>
-                </tr>
-              </thead>
+          <div className="divide-y divide-gray-100">
+            {historyQuery.isLoading ? (
+              <div className="px-6 py-10 text-center text-sm text-gray-500">Memuat riwayat konfigurasi...</div>
+            ) : historyItems.length === 0 ? (
+              <div className="px-6 py-10 text-center text-sm text-gray-500">Belum ada riwayat konfigurasi.</div>
+            ) : (
+              historyItems.map((config) => (
+                <article key={config.id} className="px-6 py-5">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="space-y-2">
+                      <span
+                        className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${
+                          config.isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"
+                        }`}
+                      >
+                        {config.isActive ? "Aktif" : "Nonaktif"}
+                      </span>
+                      <p className="text-sm text-gray-500">
+                        Berlaku sejak{" "}
+                        <span className="font-semibold text-gray-800">{formatDateTime(config.effectiveFrom)}</span>
+                      </p>
+                    </div>
+                  </div>
 
-              <tbody className="divide-y divide-gray-100 bg-white">
-                {historyQuery.isLoading ? (
-                  <tr>
-                    <td colSpan={6} className="px-6 py-10 text-center text-sm text-gray-500">
-                      Memuat riwayat konfigurasi...
-                    </td>
-                  </tr>
-                ) : historyItems.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="px-6 py-10 text-center text-sm text-gray-500">
-                      Belum ada riwayat konfigurasi.
-                    </td>
-                  </tr>
-                ) : (
-                  historyItems.map((config) => (
-                    <tr key={config.id} className="hover:bg-green-50/50">
-                      <td className="whitespace-nowrap px-4 py-3 text-sm">
-                        <span
-                          className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${
-                            config.isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-700"
-                          }`}
-                        >
-                          {config.isActive ? "Aktif" : "Nonaktif"}
-                        </span>
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-700">
-                        {formatRate(config.upahBuruhPerKg, config.currency)}
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-700">
-                        {formatRate(config.upahSupirPerKg, config.currency)}
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-700">
-                        {formatRate(config.upahMandorPerKg, config.currency)}
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-700">
-                        {config.updatedBy.name}
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-700">
-                        {formatDateTime(config.effectiveFrom)}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                  <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                    {rateCards(config).map((rate) => (
+                      <div key={rate.label} className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                          Tarif {rate.label}
+                        </p>
+                        <p className="mt-1 text-base font-bold text-gray-900">
+                          {formatRate(rate.value, config.currency)}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </article>
+              ))
+            )}
           </div>
 
           <div className="flex flex-col gap-3 border-t border-gray-200 bg-gray-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">

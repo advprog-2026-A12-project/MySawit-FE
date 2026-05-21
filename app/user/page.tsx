@@ -10,7 +10,6 @@ import {
   getMe,
   getUsers,
 } from "@/lib/auth-api";
-import { getWalletByUserId } from "@/lib/wallet-api";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createColumnHelper, flexRender, getCoreRowModel, useReactTable } from "@tanstack/react-table";
 
@@ -44,31 +43,10 @@ function formatDate(date: string) {
   });
 }
 
-function formatDateTime(value?: string) {
-  if (!value) return "-";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "-";
-
-  return date.toLocaleString("id-ID", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
-}
-
-function formatWalletAmount(amount?: number, currency = "SawitDollar") {
-  const value = new Intl.NumberFormat("id-ID", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(amount ?? 0);
-
-  return `${value} ${currency === "SawitDollar" ? "SD" : currency}`;
-}
-
 export default function UserPage() {
   const queryClient = useQueryClient();
   const [page, setPage] = useState(0);
   const [size, setSize] = useState(10);
-  const [selectedWalletUser, setSelectedWalletUser] = useState<UserListItem | null>(null);
 
   const [nameInput, setNameInput] = useState("");
   const [emailInput, setEmailInput] = useState("");
@@ -103,17 +81,6 @@ export default function UserPage() {
     mutationFn: (userId: string) => deleteUser(userId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
-    },
-  });
-
-  const selectedWalletUserId = selectedWalletUser?.id;
-  const walletQuery = useQuery({
-    queryKey: ["wallet", "admin", selectedWalletUserId],
-    queryFn: () => getWalletByUserId(selectedWalletUserId as string),
-    enabled: Boolean(selectedWalletUserId),
-    retry: (failureCount, error) => {
-      if ((error as ApiError).status === 404) return false;
-      return failureCount < 2;
     },
   });
 
@@ -162,13 +129,12 @@ export default function UserPage() {
 
         return (
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setSelectedWalletUser(row.original)}
+            <Link
+              href={`/user/${row.original.id}`}
               className="rounded-md border border-green-200 px-3 py-1.5 text-xs font-semibold text-green-700 hover:bg-green-50"
             >
-              Wallet
-            </button>
+              Profile
+            </Link>
             <button
               type="button"
               disabled={isDeleting}
@@ -450,100 +416,6 @@ export default function UserPage() {
           </div>
         </section>
 
-        {selectedWalletUser && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-6">
-            <div className="w-full max-w-lg rounded-2xl border border-green-200 bg-white shadow-xl">
-              <div className="flex items-start justify-between gap-4 border-b border-gray-100 px-6 py-5">
-                <div>
-                  <h2 className="text-xl font-semibold text-gray-900">Wallet User</h2>
-                  <p className="mt-1 text-sm text-gray-500">
-                    {selectedWalletUser.name} &middot; {roleLabels[selectedWalletUser.role]}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setSelectedWalletUser(null)}
-                  className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-semibold text-gray-700 hover:bg-gray-50"
-                >
-                  Tutup
-                </button>
-              </div>
-
-              <div className="px-6 py-5">
-                {walletQuery.isLoading && (
-                  <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-5 text-sm text-gray-600">
-                    Memuat wallet user...
-                  </div>
-                )}
-
-                {walletQuery.isError && (walletQuery.error as ApiError).status === 404 && (
-                  <div className="rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-5">
-                    <p className="text-sm font-semibold text-yellow-800">Wallet user belum tersedia.</p>
-                    <p className="mt-1 text-sm text-yellow-700">
-                      Wallet mungkin belum dibuat atau event registrasi belum selesai diproses.
-                    </p>
-                  </div>
-                )}
-
-                {walletQuery.isError && (walletQuery.error as ApiError).status !== 404 && (
-                  <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-5 text-sm text-red-700">
-                    {(walletQuery.error as ApiError).message}
-                  </div>
-                )}
-
-                {walletQuery.data?.data && (
-                  <div className="space-y-5">
-                    <div className="rounded-lg border border-green-100 bg-green-50 p-4">
-                      <p className="text-sm font-medium text-green-700">Saldo saat ini</p>
-                      <p className="mt-2 text-3xl font-bold text-green-950">
-                        {formatWalletAmount(walletQuery.data.data.balance, walletQuery.data.data.currency)}
-                      </p>
-                    </div>
-
-                    <dl className="space-y-3 text-sm">
-                      <div className="flex items-start justify-between gap-3 border-b border-gray-100 pb-2">
-                        <dt className="text-gray-500">User ID</dt>
-                        <dd className="max-w-[260px] truncate font-medium text-gray-900">
-                          {walletQuery.data.data.userId}
-                        </dd>
-                      </div>
-                      <div className="flex items-start justify-between gap-3 border-b border-gray-100 pb-2">
-                        <dt className="text-gray-500">Nama</dt>
-                        <dd className="font-medium text-gray-900">
-                          {walletQuery.data.data.userName ?? selectedWalletUser.name}
-                        </dd>
-                      </div>
-                      <div className="flex items-start justify-between gap-3 border-b border-gray-100 pb-2">
-                        <dt className="text-gray-500">Role</dt>
-                        <dd>
-                          <span
-                            className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${roleBadge(
-                              selectedWalletUser.role
-                            )}`}
-                          >
-                            {walletQuery.data.data.userRole ?? roleLabels[selectedWalletUser.role]}
-                          </span>
-                        </dd>
-                      </div>
-                      <div className="flex items-start justify-between gap-3 border-b border-gray-100 pb-2">
-                        <dt className="text-gray-500">Dibuat</dt>
-                        <dd className="font-medium text-gray-900">
-                          {formatDateTime(walletQuery.data.data.createdAt)}
-                        </dd>
-                      </div>
-                      <div className="flex items-start justify-between gap-3">
-                        <dt className="text-gray-500">Diperbarui</dt>
-                        <dd className="font-medium text-gray-900">
-                          {formatDateTime(walletQuery.data.data.updatedAt)}
-                        </dd>
-                      </div>
-                    </dl>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </main>
   );

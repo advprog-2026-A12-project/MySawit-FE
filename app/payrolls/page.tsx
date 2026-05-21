@@ -3,7 +3,7 @@
 import { FormEvent, useState } from "react";
 import ConfirmDialog from "@/app/components/ConfirmDialog";
 import { useToast } from "@/app/components/ToastProvider";
-import { ApiError, UserRole, getMe } from "@/lib/auth-api";
+import { ApiError, UserRole, getMe, getUserDetail } from "@/lib/auth-api";
 import {
   Payroll,
   PayrollReferenceType,
@@ -34,6 +34,10 @@ const referenceTypeLabels: Record<PayrollReferenceType, string> = {
   HARVEST: "Panen",
   DELIVERY: "Pengiriman",
 };
+
+const payrollStatusOptions: PayrollStatus[] = ["PENDING", "ACCEPTED", "REJECTED"];
+const payrollUserRoleOptions: PayrollUserRole[] = ["BURUH", "SUPIR_TRUK", "MANDOR"];
+const payrollReferenceTypeOptions: PayrollReferenceType[] = ["HARVEST", "DELIVERY"];
 
 const payrollSortOptions = [
   { value: "createdAt,desc", label: "Terbaru" },
@@ -107,8 +111,6 @@ export default function PayrollsPage() {
   const [referenceType, setReferenceType] = useState<PayrollReferenceType | "">("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
-  const [userNameInput, setUserNameInput] = useState("");
-  const [userNameFilter, setUserNameFilter] = useState("");
   const [selectedPayrollId, setSelectedPayrollId] = useState<string | null>(null);
   const [pendingAcceptPayroll, setPendingAcceptPayroll] = useState<Payroll | null>(null);
   const [pendingRejectPayroll, setPendingRejectPayroll] = useState<Payroll | null>(null);
@@ -135,7 +137,6 @@ export default function PayrollsPage() {
       referenceType,
       dateFrom,
       dateTo,
-      userNameFilter,
     ],
     queryFn: () => {
       if (isAdmin) {
@@ -148,7 +149,6 @@ export default function PayrollsPage() {
           referenceType: referenceType || undefined,
           dateFrom: dateFrom || undefined,
           dateTo: dateTo || undefined,
-          userName: userNameFilter || undefined,
         }).then((response) => response.data);
       }
 
@@ -170,13 +170,28 @@ export default function PayrollsPage() {
     enabled: Boolean(selectedPayrollId),
   });
 
+  const detailUserId = detailQuery.data?.user?.id;
+  const detailApproverId = detailQuery.data?.approvedBy?.id;
+
+  const detailUserQuery = useQuery({
+    queryKey: ["users", "detail", detailUserId],
+    queryFn: () => getUserDetail(detailUserId as string).then((response) => response.data),
+    enabled: Boolean(isAdmin && detailUserId),
+  });
+
+  const detailApproverQuery = useQuery({
+    queryKey: ["users", "detail", detailApproverId],
+    queryFn: () => getUserDetail(detailApproverId as string).then((response) => response.data),
+    enabled: Boolean(isAdmin && detailApproverId),
+  });
+
   const acceptMutation = useMutation({
     mutationFn: (payrollId: string) => acceptPayroll(payrollId),
     onSuccess: (response) => {
       showToast({
         type: "success",
         title: "Payroll diterima",
-        description: `${response.data.user.name} menerima ${formatAmount(response.data.amount)}.`,
+        description: `Payroll sebesar ${formatAmount(response.data.amount)} berhasil dibayarkan.`,
       });
       setPendingAcceptPayroll(null);
       queryClient.invalidateQueries({ queryKey: ["payrolls"] });
@@ -197,7 +212,7 @@ export default function PayrollsPage() {
       showToast({
         type: "success",
         title: "Payroll ditolak",
-        description: `Payroll ${response.data.user.name} berhasil ditolak.`,
+        description: `Payroll sebesar ${formatAmount(response.data.amount)} berhasil ditolak.`,
       });
       setPendingRejectPayroll(null);
       setRejectionReason("");
@@ -221,14 +236,6 @@ export default function PayrollsPage() {
     setReferenceType("");
     setDateFrom("");
     setDateTo("");
-    setUserNameInput("");
-    setUserNameFilter("");
-  }
-
-  function handleApplyNameFilter(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setPage(0);
-    setUserNameFilter(userNameInput.trim());
   }
 
   function handleRejectSubmit(event: FormEvent<HTMLFormElement>) {
@@ -274,6 +281,8 @@ export default function PayrollsPage() {
   const payrolls = payrollData?.content ?? [];
   const totalPages = Math.max(payrollData?.totalPages ?? 1, 1);
   const detailPayroll = detailQuery.data;
+  const detailUser = detailUserQuery.data;
+  const detailApprover = detailApproverQuery.data;
 
   return (
     <main className="min-h-screen bg-green-50 p-4 sm:p-8">
@@ -296,29 +305,6 @@ export default function PayrollsPage() {
 
         <section className="rounded-2xl border border-green-200 bg-white p-6">
           <div className="grid gap-4 lg:grid-cols-6">
-            {isAdmin && (
-              <form onSubmit={handleApplyNameFilter} className="lg:col-span-2">
-                <label htmlFor="userName" className="mb-1 block text-sm font-medium text-gray-700">
-                  Nama penerima
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    id="userName"
-                    value={userNameInput}
-                    onChange={(event) => setUserNameInput(event.target.value)}
-                    placeholder="Cari nama"
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200"
-                  />
-                  <button
-                    type="submit"
-                    className="rounded-lg bg-green-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-green-800"
-                  >
-                    Cari
-                  </button>
-                </div>
-              </form>
-            )}
-
             <div>
               <label htmlFor="status" className="mb-1 block text-sm font-medium text-gray-700">
                 Status
@@ -333,9 +319,11 @@ export default function PayrollsPage() {
                 className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200"
               >
                 <option value="">Semua</option>
-                <option value="PENDING">PENDING</option>
-                <option value="ACCEPTED">ACCEPTED</option>
-                <option value="REJECTED">REJECTED</option>
+                {payrollStatusOptions.map((option) => (
+                  <option key={option} value={option}>
+                    {statusLabels[option]}
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -355,9 +343,11 @@ export default function PayrollsPage() {
                     className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200"
                   >
                     <option value="">Semua</option>
-                    <option value="BURUH">BURUH</option>
-                    <option value="MANDOR">MANDOR</option>
-                    <option value="SUPIR_TRUK">SUPIR_TRUK</option>
+                    {payrollUserRoleOptions.map((option) => (
+                      <option key={option} value={option}>
+                        {roleLabels[option]}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
@@ -375,8 +365,11 @@ export default function PayrollsPage() {
                     className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200"
                   >
                     <option value="">Semua</option>
-                    <option value="HARVEST">HARVEST</option>
-                    <option value="DELIVERY">DELIVERY</option>
+                    {payrollReferenceTypeOptions.map((option) => (
+                      <option key={option} value={option}>
+                        {referenceTypeLabels[option]}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </>
@@ -480,7 +473,10 @@ export default function PayrollsPage() {
               <thead className="bg-green-100/60">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">
-                    {isAdmin ? "Penerima" : "Payroll"}
+                    {isAdmin ? "Role" : "Payroll"}
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">
+                    Referensi
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">
                     Amount
@@ -493,9 +489,6 @@ export default function PayrollsPage() {
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">
                     Status
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">
-                    Referensi
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-600">
                     Dibuat
@@ -523,16 +516,13 @@ export default function PayrollsPage() {
                     <tr key={payroll.id} className="hover:bg-green-50/50">
                       <td className="whitespace-nowrap px-4 py-3 text-sm">
                         {isAdmin && payroll.user ? (
-                          <>
-                            <p className="font-semibold text-gray-900">{payroll.user.name}</p>
-                            <span
-                              className={`mt-1 inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${roleBadge(
-                                payroll.user.role
-                              )}`}
-                            >
-                              {roleLabels[payroll.user.role]}
-                            </span>
-                          </>
+                          <span
+                            className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${roleBadge(
+                              payroll.user.role
+                            )}`}
+                          >
+                            {roleLabels[payroll.user.role]}
+                          </span>
                         ) : (
                           <>
                             <p className="font-semibold text-gray-900">
@@ -541,6 +531,9 @@ export default function PayrollsPage() {
                             <p className="mt-1 max-w-xs truncate text-xs text-gray-500">{payroll.description}</p>
                           </>
                         )}
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-700">
+                        {referenceTypeLabels[payroll.referenceType]}
                       </td>
                       <td className="whitespace-nowrap px-4 py-3 text-sm font-semibold text-gray-900">
                         {formatAmount(payroll.amount)}
@@ -559,9 +552,6 @@ export default function PayrollsPage() {
                         >
                           {statusLabels[payroll.status]}
                         </span>
-                      </td>
-                      <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-700">
-                        {referenceTypeLabels[payroll.referenceType]}
                       </td>
                       <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-700">
                         {formatDateTime(payroll.createdAt)}
@@ -687,10 +677,21 @@ export default function PayrollsPage() {
                     <div className="rounded-lg border border-gray-200 p-4">
                       <dt className="text-gray-500">Penerima</dt>
                       <dd className="mt-1 font-semibold text-gray-900">
-                        {detailPayroll.user
-                          ? `${detailPayroll.user.name} (${roleLabels[detailPayroll.user.role]})`
-                          : profile?.name ?? "-"}
+                        {isAdmin
+                          ? detailUserQuery.isLoading
+                            ? "Memuat nama penerima..."
+                            : detailUser
+                            ? `${detailUser.name} (${roleLabels[detailUser.role]})`
+                            : detailPayroll.user
+                            ? roleLabels[detailPayroll.user.role]
+                            : "-"
+                          : profile
+                          ? `${profile.name} (${roleLabels[profile.role]})`
+                          : "-"}
                       </dd>
+                      {isAdmin && detailUserQuery.isError && (
+                        <p className="mt-1 text-xs text-red-600">Nama penerima belum bisa dimuat dari auth service.</p>
+                      )}
                     </div>
                     <div className="rounded-lg border border-gray-200 p-4">
                       <dt className="text-gray-500">Referensi</dt>
@@ -716,6 +717,23 @@ export default function PayrollsPage() {
                       <dt className="text-gray-500">Disetujui/Ditolak</dt>
                       <dd className="mt-1 font-semibold text-gray-900">{formatDateTime(detailPayroll.approvedAt)}</dd>
                     </div>
+                    {isAdmin && (
+                      <div className="rounded-lg border border-gray-200 p-4">
+                        <dt className="text-gray-500">Diproses oleh</dt>
+                        <dd className="mt-1 font-semibold text-gray-900">
+                          {!detailPayroll.approvedBy?.id
+                            ? "-"
+                            : detailApproverQuery.isLoading
+                            ? "Memuat admin..."
+                            : detailApprover
+                            ? detailApprover.name
+                            : "Admin"}
+                        </dd>
+                        {detailApproverQuery.isError && (
+                          <p className="mt-1 text-xs text-red-600">Nama admin belum bisa dimuat dari auth service.</p>
+                        )}
+                      </div>
+                    )}
                   </dl>
 
                   <div className="rounded-lg border border-gray-200 p-4">
@@ -763,7 +781,7 @@ export default function PayrollsPage() {
         title="Accept payroll?"
         description={
           pendingAcceptPayroll
-            ? `Payroll ${pendingAcceptPayroll.user?.name ?? "ini"} sebesar ${formatAmount(
+            ? `Payroll sebesar ${formatAmount(
                 pendingAcceptPayroll.amount
               )} akan dibayarkan dari wallet admin ke wallet pekerja.`
             : ""
@@ -785,7 +803,7 @@ export default function PayrollsPage() {
             <div className="border-b border-gray-100 px-6 py-5">
               <h2 className="text-xl font-semibold text-gray-900">Reject Payroll</h2>
               <p className="mt-2 text-sm text-gray-600">
-                Beri alasan penolakan untuk payroll {pendingRejectPayroll.user?.name ?? "ini"}.
+                Beri alasan penolakan untuk payroll ini.
               </p>
             </div>
 
