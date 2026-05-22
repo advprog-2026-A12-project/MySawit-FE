@@ -16,7 +16,6 @@ export default function HarvestCreatePage() {
 
     const router = useRouter();
 
-    // Membersihkan URL preview dari memori (mencegah memory leak)
     useEffect(() => {
         return () => {
             previews.forEach((url) => URL.revokeObjectURL(url));
