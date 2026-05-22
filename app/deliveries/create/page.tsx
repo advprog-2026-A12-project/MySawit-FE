@@ -5,8 +5,9 @@ import { useRouter } from 'next/navigation';
 import { getStoredUser, UserListItem } from '@/lib/auth-api';
 import { getPanenBawahan } from '@/lib/api';
 import { createDelivery, getSupirList } from '@/lib/delivery-api';
-import { HarvestMultiSelectTable } from '@/app/components/delivery/HarvestMultiSelectTable';
+import { HarvestMultiSelectTable, type HarvestRow } from '@/app/components/delivery/HarvestMultiSelectTable';
 import { PayloadSummaryCard } from '@/app/components/delivery/PayloadSummaryCard';
+import { getErrorMessage } from '@/lib/utils';
 
 export default function CreateDeliveryPage() {
     const router = useRouter();
@@ -16,7 +17,7 @@ export default function CreateDeliveryPage() {
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     
-    const [harvests, setHarvests] = useState<any[]>([]);
+    const [harvests, setHarvests] = useState<HarvestRow[]>([]);
     const [selectedHarvestIds, setSelectedHarvestIds] = useState<string[]>([]);
     
     const [supirList, setSupirList] = useState<UserListItem[]>([]);
@@ -34,17 +35,17 @@ export default function CreateDeliveryPage() {
             try {
                 // Fetch supir list
                 const supirData = await getSupirList();
-                if (supirData?.data?.content) setSupirList(supirData.data.content);
-                else if (Array.isArray(supirData)) setSupirList(supirData);
+                const supirContent = Array.isArray(supirData) ? supirData : supirData?.data?.content;
+                if (Array.isArray(supirContent)) setSupirList(supirContent);
 
                 // Fetch harvests (Only APPROVED ones)
-                const harvestData = await getPanenBawahan();
+                const harvestData = (await getPanenBawahan()) as HarvestRow[];
                 if (Array.isArray(harvestData)) {
-                    setHarvests(harvestData.filter((h: any) => h.status === 'APPROVED'));
+                    setHarvests(harvestData.filter((h) => h.status === 'APPROVED'));
                 }
-            } catch (err) {
+            } catch (err: unknown) {
                 console.error(err);
-                setMsg({ text: "Gagal memuat data awal.", type: "error" });
+                setMsg({ text: getErrorMessage(err, "Gagal memuat data awal."), type: "error" });
             } finally {
                 setLoading(false);
             }
@@ -56,7 +57,7 @@ export default function CreateDeliveryPage() {
     const totalPayload = useMemo(() => {
         return harvests
             .filter(h => selectedHarvestIds.includes(h.id))
-            .reduce((sum, h) => sum + (h.kilogram || 0), 0);
+            .reduce((sum, h) => sum + (h.kilogram ?? 0), 0);
     }, [harvests, selectedHarvestIds]);
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -93,8 +94,8 @@ export default function CreateDeliveryPage() {
             setTimeout(() => {
                 router.push('/deliveries/mandor');
             }, 1500);
-        } catch (error: any) {
-            setMsg({ text: error.message || "Gagal menghubungi server", type: "error" });
+        } catch (error: unknown) {
+            setMsg({ text: getErrorMessage(error, "Gagal menghubungi server"), type: "error" });
             setSubmitting(false);
         }
     };
