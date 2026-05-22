@@ -3,8 +3,13 @@ import { login as authLogin, persistAuthSession, UserProfile } from "@/lib/auth-
 // =========================
 // BASE CONFIG
 // =========================
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://mysawit-sawit.onrender.com/api";
-const AUTH_BASE = process.env.NEXT_PUBLIC_AUTH_URL || "https://mysawit-auth-1.onrender.com";
+const API_BASE =
+    process.env.NEXT_PUBLIC_API_URL ||
+    "http://MySAWIT-ALB-1138598794.us-east-1.elb.amazonaws.com/api";
+
+const AUTH_BASE =
+    process.env.NEXT_PUBLIC_AUTH_URL ||
+    "http://34.198.248.59:8001";
 
 // =========================
 // HELPER
@@ -101,6 +106,7 @@ export async function submitHarvest(params: {
     photos?: File[];
 }) {
     const formData = new FormData();
+
     formData.append("kilogram", params.kilogram.toString());
     formData.append("reportNote", params.reportNote);
 
@@ -120,7 +126,10 @@ export async function getMyHarvest(params?: {
     status?: string;
 }) {
     const query = new URLSearchParams(cleanObject(params)).toString();
-    return fetcher(`${API_BASE}/harvest/my${query ? `?${query}` : ""}`);
+
+    return fetcher(
+        `${API_BASE}/harvest/my${query ? `?${query}` : ""}`
+    );
 }
 
 // =========================
@@ -131,7 +140,10 @@ export async function getPanenBawahan(params?: {
     tanggalPanen?: string;
 }) {
     const query = new URLSearchParams(cleanObject(params)).toString();
-    return fetcher(`${API_BASE}/harvest/bawahan${query ? `?${query}` : ""}`);
+
+    return fetcher(
+        `${API_BASE}/harvest/bawahan${query ? `?${query}` : ""}`
+    );
 }
 
 // =========================
@@ -139,10 +151,19 @@ export async function getPanenBawahan(params?: {
 // =========================
 export async function getMandorBuruhs(
     mandorId: string,
-    params?: { page?: number; size?: number; name?: string }
+    params?: {
+        page?: number;
+        size?: number;
+        name?: string;
+    }
 ) {
-    const query = new URLSearchParams(cleanObject(params as Record<string, string>)).toString();
-    return fetcher(`${AUTH_BASE}/mandors/${mandorId}/buruhs${query ? `?${query}` : ""}`);
+    const query = new URLSearchParams(
+        cleanObject(params as Record<string, string>)
+    ).toString();
+
+    return fetcher(
+        `${AUTH_BASE}/mandors/${mandorId}/buruhs${query ? `?${query}` : ""}`
+    );
 }
 
 // =========================
@@ -157,7 +178,10 @@ export async function approvePanen(id: string) {
 // =========================
 // MANDOR: REJECT
 // =========================
-export async function rejectPanen(id: string, rejectionReason: string) {
+export async function rejectPanen(
+    id: string,
+    rejectionReason: string
+) {
     return fetcher(`${API_BASE}/harvest/${id}/reject`, {
         method: "PATCH",
         body: JSON.stringify({ rejectionReason }),
@@ -169,14 +193,4 @@ export async function rejectPanen(id: string, rejectionReason: string) {
 // =========================
 export async function getHarvestDetail(id: string) {
     return fetcher(`${API_BASE}/harvest/${id}`);
-}
-
-// =========================
-// DELETE HARVEST
-// =========================
-export async function deleteHarvest(id: string) {
-    await fetcher(`${API_BASE}/harvest/${id}`, {
-        method: "DELETE",
-    });
-    return true;
 }

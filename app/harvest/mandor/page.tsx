@@ -30,6 +30,7 @@ export default function MandorPage() {
     const [data, setData] = useState<Harvest[]>([]);
     const [buruhList, setBuruhList] = useState<Buruh[]>([]);
     const [loading, setLoading] = useState(true);
+    const [user, setUser] = useState<UserProfile | null>(null);
 
     const [buruhId, setBuruhId] = useState("");
     const [tanggalPanen, setTanggalPanen] = useState("");
@@ -41,6 +42,10 @@ export default function MandorPage() {
     const [actionLoading, setActionLoading] = useState(false);
 
     const router = useRouter();
+
+    useEffect(() => {
+        setUser(getUser() as UserProfile | null);
+    }, []);
 
     const fetchData = useCallback(async () => {
         setLoading(true);
@@ -54,8 +59,7 @@ export default function MandorPage() {
 
             const result = Array.isArray(res) ? res : res?.data;
             setData(result || []);
-        } catch (err) {
-            console.error("Fetch error:", err);
+        } catch {
             setData([]);
         } finally {
             setLoading(false);
@@ -63,7 +67,6 @@ export default function MandorPage() {
     }, [buruhId, tanggalPanen]);
 
     const fetchBuruhOptions = useCallback(async () => {
-        const user = getUser() as UserProfile | null;
         if (!user?.id) return;
 
         try {
@@ -71,10 +74,10 @@ export default function MandorPage() {
             if (res?.data?.content) {
                 setBuruhList(res.data.content);
             }
-        } catch (err) {
-            console.error("Failed to fetch buruh list:", err);
+        } catch {
+            // gagal fetch buruh list, biarkan kosong
         }
-    }, []);
+    }, [user]);
 
     useEffect(() => {
         fetchBuruhOptions();
@@ -91,8 +94,7 @@ export default function MandorPage() {
             await approvePanen(id);
             setActionMsg("✅ Panen berhasil disetujui!");
             await fetchData();
-        } catch (err) {
-            // Disembunyikan error dari backend
+        } catch {
             setActionMsg("❌ Gagal menyetujui laporan. Silakan coba lagi.");
         } finally {
             setActionLoading(false);
@@ -112,14 +114,11 @@ export default function MandorPage() {
 
         try {
             await rejectPanen(rejectId, alasan.trim());
-
             setActionMsg("✅ Panen berhasil ditolak");
             setRejectId(null);
             setAlasan("");
-
             await fetchData();
-        } catch (err) {
-            // Disembunyikan error dari backend
+        } catch {
             setActionMsg("❌ Gagal menolak laporan. Silakan coba lagi.");
         } finally {
             setActionLoading(false);
@@ -151,27 +150,6 @@ export default function MandorPage() {
                         ← Kembali
                     </button>
                 </div>
-
-                {!loading && (
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                        <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow p-4 text-center">
-                            <p className="text-sm font-semibold text-gray-500 uppercase">Total Buruh</p>
-                            <p className="text-2xl font-bold text-green-800 mt-1">{buruhList.length}</p>
-                        </div>
-                        <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow p-4 text-center">
-                            <p className="text-sm font-semibold text-gray-500 uppercase">Menunggu</p>
-                            <p className="text-2xl font-bold text-yellow-600 mt-1">{data.filter(d => d.status === "PENDING").length}</p>
-                        </div>
-                        <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow p-4 text-center">
-                            <p className="text-sm font-semibold text-gray-500 uppercase">Disetujui</p>
-                            <p className="text-2xl font-bold text-green-600 mt-1">{data.filter(d => d.status === "APPROVED").length}</p>
-                        </div>
-                        <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow p-4 text-center">
-                            <p className="text-sm font-semibold text-gray-500 uppercase">Ditolak</p>
-                            <p className="text-2xl font-bold text-red-600 mt-1">{data.filter(d => d.status === "REJECTED").length}</p>
-                        </div>
-                    </div>
-                )}
 
                 <div className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow mb-8">
                     <div className="border-b border-gray-200 bg-gray-50 p-4">
@@ -264,7 +242,8 @@ export default function MandorPage() {
                                 </tr>
                             ) : (
                                 data.map((item) => {
-                                    const buruhName = buruhList.find(b => b.id === item.buruhId)?.name || "User ID: " + item.buruhId.substring(0,8) + "...";
+                                    const buruhName = buruhList.find(b => b.id === item.buruhId)?.name
+                                        ?? `User ID: ${item.buruhId.substring(0, 8)}...`;
 
                                     return (
                                         <tr key={item.id} className="transition-colors hover:bg-gray-50">
@@ -288,7 +267,6 @@ export default function MandorPage() {
                                                     >
                                                         Detail
                                                     </button>
-
                                                     {item.status === "PENDING" && (
                                                         <>
                                                             <button
