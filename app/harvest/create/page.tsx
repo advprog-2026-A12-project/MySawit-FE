@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { submitHarvest } from "@/lib/api";
+import { submitHarvest } from "@/lib/harvest_api";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 
@@ -16,7 +16,6 @@ export default function HarvestCreatePage() {
 
     const router = useRouter();
 
-    // Membersihkan URL preview dari memori (mencegah memory leak)
     useEffect(() => {
         return () => {
             previews.forEach((url) => URL.revokeObjectURL(url));

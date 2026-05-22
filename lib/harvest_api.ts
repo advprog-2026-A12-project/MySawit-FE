@@ -1,15 +1,30 @@
-import { login as authLogin, persistAuthSession, UserProfile } from "@/lib/auth-api";
+import {
+    login as authLogin,
+    persistAuthSession,
+    UserProfile,
+    getAccessToken,
+} from "@/lib/auth-api";
 
 // =========================
 // BASE CONFIG
 // =========================
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://mysawit-sawit.onrender.com/api";
-const AUTH_BASE = process.env.NEXT_PUBLIC_AUTH_URL || "https://mysawit-auth-1.onrender.com";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL;
+const AUTH_BASE = process.env.NEXT_PUBLIC_AUTH_API_URL;
+
+if (!API_BASE) {
+    throw new Error("NEXT_PUBLIC_API_URL is not defined");
+}
+
+if (!AUTH_BASE) {
+    throw new Error("NEXT_PUBLIC_AUTH_API_URL is not defined");
+}
 
 // =========================
 // HELPER
 // =========================
-function cleanObject(params?: Record<string, string | number | undefined>) {
+function cleanObject(
+    params?: Record<string, string | number | undefined>
+) {
     return Object.fromEntries(
         Object.entries(params || {}).filter(
             ([, v]) => v !== "" && v !== undefined
@@ -21,14 +36,14 @@ function cleanObject(params?: Record<string, string | number | undefined>) {
 // TOKEN HELPERS
 // =========================
 export function getToken(): string | null {
-    if (typeof window === "undefined") return null;
-    return localStorage.getItem("accessToken");
+    return getAccessToken();
 }
 
 export function getUser(): UserProfile | null {
     if (typeof window === "undefined") return null;
 
     const raw = localStorage.getItem("user");
+
     if (!raw) return null;
 
     try {
@@ -76,8 +91,8 @@ async function fetcherMultipart(url: string, formData: FormData) {
     });
 
     if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.error || "Upload gagal");
+        const errText = await res.text();
+        throw new Error(errText || "Upload gagal");
     }
 
     return res.json();
@@ -101,11 +116,12 @@ export async function submitHarvest(params: {
     photos?: File[];
 }) {
     const formData = new FormData();
+
     formData.append("kilogram", params.kilogram.toString());
     formData.append("reportNote", params.reportNote);
 
-    params.photos?.forEach((p) => {
-        formData.append("photos", p);
+    params.photos?.forEach((photo) => {
+        formData.append("photos", photo);
     });
 
     return fetcherMultipart(`${API_BASE}/harvest`, formData);
@@ -120,6 +136,7 @@ export async function getMyHarvest(params?: {
     status?: string;
 }) {
     const query = new URLSearchParams(cleanObject(params)).toString();
+
     return fetcher(`${API_BASE}/harvest/my${query ? `?${query}` : ""}`);
 }
 
@@ -131,6 +148,7 @@ export async function getPanenBawahan(params?: {
     tanggalPanen?: string;
 }) {
     const query = new URLSearchParams(cleanObject(params)).toString();
+
     return fetcher(`${API_BASE}/harvest/bawahan${query ? `?${query}` : ""}`);
 }
 
@@ -139,10 +157,19 @@ export async function getPanenBawahan(params?: {
 // =========================
 export async function getMandorBuruhs(
     mandorId: string,
-    params?: { page?: number; size?: number; name?: string }
+    params?: {
+        page?: number;
+        size?: number;
+        name?: string;
+    }
 ) {
-    const query = new URLSearchParams(cleanObject(params as Record<string, string>)).toString();
-    return fetcher(`${AUTH_BASE}/mandors/${mandorId}/buruhs${query ? `?${query}` : ""}`);
+    const query = new URLSearchParams(
+        cleanObject(params as Record<string, string | number | undefined>)
+    ).toString();
+
+    return fetcher(
+        `${AUTH_BASE}/api/v1/mandors/${mandorId}/buruhs${query ? `?${query}` : ""}`
+    );
 }
 
 // =========================
@@ -178,5 +205,6 @@ export async function deleteHarvest(id: string) {
     await fetcher(`${API_BASE}/harvest/${id}`, {
         method: "DELETE",
     });
+
     return true;
 }

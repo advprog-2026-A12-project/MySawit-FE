@@ -68,15 +68,17 @@ export type KebunCreatePayload = {
 export type KebunUpdatePayload = Omit<KebunCreatePayload, "kode">;
 
 // BASE CONFIG
-const isLocal =
-	typeof window !== "undefined" &&
-	(window.location.hostname === "localhost" ||
-		window.location.hostname === "127.0.0.1" ||
-		window.location.hostname.startsWith("192.168."));
+function normalizeApiBase(url: string | undefined) {
+	const raw = (url || "").replace(/\/$/, "");
+	if (!raw) return "";
+	if (raw.endsWith("/api/kebun")) return raw;
+	if (raw.endsWith("/api")) return `${raw}/kebun`;
+	return `${raw}/api/kebun`;
+}
 
-const API_BASE = isLocal
-	? `http://${typeof window !== "undefined" ? window.location.hostname : "localhost"}:8082/api/kebun`
-	: "https://mysawit-sawit.onrender.com/api/kebun";
+const API_BASE = normalizeApiBase(
+	process.env.NEXT_PUBLIC_API_BASE ?? process.env.NEXT_PUBLIC_API_URL
+);
 
 // TOKEN HELPER
 function getToken(): string | null {
@@ -89,6 +91,12 @@ async function gardenFetcher<T>(
 	url: string,
 	options?: RequestInit
 ): Promise<ApiResponse<T>> {
+	if (!API_BASE) {
+		throw new Error(
+			"Konfigurasi API kebun belum diatur. Set NEXT_PUBLIC_API_BASE atau NEXT_PUBLIC_API_URL."
+		);
+	}
+
 	const token = getToken();
 
 	const res = await fetch(url, {

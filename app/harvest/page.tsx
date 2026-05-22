@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { getMyHarvest, getUser } from "@/lib/api";
+import { getMyHarvest, getUser } from "@/lib/harvest_api";
 import { UserProfile } from "@/lib/auth-api";
 import { useRouter } from "next/navigation";
 
@@ -40,8 +40,7 @@ export default function HarvestPage() {
             });
             const result = Array.isArray(res) ? res : res?.data;
             setData(result || []);
-        } catch (error) {
-            console.error("Gagal mengambil data panen:", error);
+        } catch {
             setData([]);
         } finally {
             setLoading(false);
