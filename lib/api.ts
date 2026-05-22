@@ -1,10 +1,11 @@
 import { login as authLogin, persistAuthSession, UserProfile } from "@/lib/auth-api";
+import { AUTH_BACKEND_BASE_URL, MAIN_BACKEND_BASE_URL } from "@/lib/backend-env";
 
 // =========================
 // BASE CONFIG
 // =========================
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://mysawit-sawit.onrender.com/api";
-const AUTH_BASE = process.env.NEXT_PUBLIC_AUTH_URL || "https://mysawit-auth-1.onrender.com";
+const API_BASE = `${MAIN_BACKEND_BASE_URL}/api`;
+const AUTH_BASE = AUTH_BACKEND_BASE_URL;
 
 // =========================
 // HELPER

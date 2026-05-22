@@ -1,4 +1,5 @@
 // Garden API module - dedicated API functions for Manajemen kebun.
+import { MAIN_BACKEND_BASE_URL } from "@/lib/backend-env";
 
 // TYPES
 export type SupirDetail = {
@@ -68,15 +69,7 @@ export type KebunCreatePayload = {
 export type KebunUpdatePayload = Omit<KebunCreatePayload, "kode">;
 
 // BASE CONFIG
-const isLocal =
-	typeof window !== "undefined" &&
-	(window.location.hostname === "localhost" ||
-		window.location.hostname === "127.0.0.1" ||
-		window.location.hostname.startsWith("192.168."));
-
-const API_BASE = isLocal
-	? `http://${typeof window !== "undefined" ? window.location.hostname : "localhost"}:8082/api/kebun`
-	: "https://mysawit-sawit.onrender.com/api/kebun";
+const API_BASE = `${MAIN_BACKEND_BASE_URL}/api/kebun`;
 
 // TOKEN HELPER
 function getToken(): string | null {

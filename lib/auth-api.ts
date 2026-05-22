@@ -1,3 +1,5 @@
+import { AUTH_BACKEND_BASE_URL } from "@/lib/backend-env";
+
 export type UserRole = "ADMIN" | "BURUH" | "MANDOR" | "SUPIR_TRUK";
 
 export interface ApiResponse<T> {
@@ -79,15 +81,15 @@ export class ApiError extends Error {
 
 const AUTH_EVENT_NAME = "mysawit-auth-change";
 
-function normalizeApiBase(url: string | undefined) {
-  const raw = (url || "http://localhost:8001").replace(/\/$/, "");
+function normalizeApiBase(url: string) {
+  const raw = url.replace(/\/$/, "");
   if (raw.endsWith("/api/v1")) {
     return raw;
   }
   return `${raw}/api/v1`;
 }
 
-const API_BASE = normalizeApiBase(process.env.NEXT_PUBLIC_AUTH_API_URL);
+const API_BASE = normalizeApiBase(AUTH_BACKEND_BASE_URL);
 
 export function toAuthUrl(path: string) {
   return `${API_BASE}${path.startsWith("/") ? path : `/${path}`}`;

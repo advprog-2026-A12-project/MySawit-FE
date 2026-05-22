@@ -1,4 +1,5 @@
 import { ApiError, ApiResponse, PaginatedResponse, getAccessToken } from "@/lib/auth-api";
+import { PAYMENT_BACKEND_BASE_URL } from "@/lib/backend-env";
 
 export type WalletTransactionType = "CREDIT" | "DEBIT";
 export type WalletReferenceType = "PAYROLL_DISBURSEMENT" | "PAYROLL_DEDUCTION" | "TOPUP" | string;
@@ -35,13 +36,8 @@ export interface WalletTransactionParams {
   dateTo?: string;
 }
 
-function normalizeApiBase(url: string | undefined) {
-  const fallback =
-    typeof window !== "undefined" && window.location.hostname === "localhost"
-      ? "http://localhost:8002"
-      : "https://mysawit-payment-2df96a73ee96.herokuapp.com";
-
-  const raw = (url || fallback).replace(/\/$/, "");
+function normalizeApiBase(url: string) {
+  const raw = url.replace(/\/$/, "");
 
   if (raw.endsWith("/api/v1")) {
     return raw;
@@ -54,7 +50,7 @@ function normalizeApiBase(url: string | undefined) {
   return `${raw}/api/v1`;
 }
 
-const API_BASE = normalizeApiBase(process.env.NEXT_PUBLIC_PAYMENT_API_URL);
+const API_BASE = normalizeApiBase(PAYMENT_BACKEND_BASE_URL);
 
 async function request<T>(path: string): Promise<ApiResponse<T>> {
   const token = getAccessToken();

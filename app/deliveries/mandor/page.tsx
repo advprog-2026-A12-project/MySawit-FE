@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { getStoredUser, getUsers, UserListItem, getAccessToken } from '@/lib/auth-api';
+import { MAIN_BACKEND_BASE_URL } from '@/lib/backend-env';
 
 interface Delivery {
     id: string;
@@ -32,8 +33,7 @@ export default function MandorDeliveryPage() {
 
     const fetchDeliveries = useCallback(async () => {
         try {
-            const baseUrl = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8082';
-            const res = await fetch(`${baseUrl}/api/deliveries`, {
+            const res = await fetch(`${MAIN_BACKEND_BASE_URL}/api/deliveries`, {
                 headers: {
                     'Authorization': `Bearer ${getAccessToken()}`,
                     'X-User-Id': user?.id || '',
@@ -105,8 +105,6 @@ export default function MandorDeliveryPage() {
 
         try {
             const token = getAccessToken();
-            const baseUrl = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8082';
-            
             const reqBody = {
                 supirId: formParams.supirId,
                 supirName: selectedSupir ? selectedSupir.name : "Supir Truk (Manual)",
@@ -114,7 +112,7 @@ export default function MandorDeliveryPage() {
                 payloadKg: payload
             };
 
-            const res = await fetch(`${baseUrl}/api/deliveries`, {
+            const res = await fetch(`${MAIN_BACKEND_BASE_URL}/api/deliveries`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

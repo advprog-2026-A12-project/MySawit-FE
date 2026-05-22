@@ -3,8 +3,7 @@
 import { useState, FormEvent } from "react";
 import Link from "next/link";
 import GoogleAuthButton from "@/app/components/GoogleAuthButton";
-
-const API_BASE = process.env.NEXT_PUBLIC_AUTH_API_URL ?? "http://localhost:8001";
+import { toAuthUrl } from "@/lib/auth-api";
 
 const ROLES = [
   { value: "BURUH", label: "Buruh Sawit" },
@@ -38,7 +37,7 @@ export default function RegisterPage() {
         mandorCertificationNumber: role === "MANDOR" ? mandorCertificationNumber : null,
       };
 
-      const res = await fetch(`${API_BASE}/api/v1/auth/register`, {
+      const res = await fetch(toAuthUrl("/auth/register"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

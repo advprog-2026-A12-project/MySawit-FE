@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getStoredUser, getAccessToken } from '@/lib/auth-api';
+import { MAIN_BACKEND_BASE_URL } from '@/lib/backend-env';
 
 interface Delivery {
     id: string;
@@ -29,8 +30,7 @@ export default function AdminDeliveryPage() {
         const fetchDeliveries = async () => {
              try {
                  const token = getAccessToken();
-                 const baseUrl = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8082';
-                 const res = await fetch(`${baseUrl}/api/deliveries`, {
+                 const res = await fetch(`${MAIN_BACKEND_BASE_URL}/api/deliveries`, {
                      cache: 'no-store',
                      headers: {
                         'Authorization': `Bearer ${token}`

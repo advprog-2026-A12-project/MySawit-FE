@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { getStoredUser, getAccessToken } from '@/lib/auth-api';
+import { MAIN_BACKEND_BASE_URL } from '@/lib/backend-env';
 
 interface Delivery {
     id: string;
@@ -26,8 +27,7 @@ export default function SupirDeliveryPage() {
     const fetchTasks = useCallback(async () => {
         setLoading(true);
         try {
-            const baseUrl = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8082';
-            const res = await fetch(`${baseUrl}/api/deliveries/supir-tasks`, {
+            const res = await fetch(`${MAIN_BACKEND_BASE_URL}/api/deliveries/supir-tasks`, {
                 headers: {
                     'Authorization': `Bearer ${getAccessToken()}`,
                     'X-User-Id': user?.id || '',
@@ -65,8 +65,7 @@ export default function SupirDeliveryPage() {
 
         setIsUpdating(true);
         try {
-            const baseUrl = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8082';
-            const res = await fetch(`${baseUrl}/api/deliveries/${id}/status`, {
+            const res = await fetch(`${MAIN_BACKEND_BASE_URL}/api/deliveries/${id}/status`, {
                 method: 'PATCH',
                 headers: {
                     'Authorization': `Bearer ${getAccessToken()}`,
