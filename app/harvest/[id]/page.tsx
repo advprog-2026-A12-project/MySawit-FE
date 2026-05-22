@@ -34,8 +34,7 @@ export default function HarvestDetailPage() {
             try {
                 const res = await getHarvestDetail(id as string);
                 setData(res);
-            } catch (err) {
-                // Pesan error teknis disembunyikan dari user
+            } catch {
                 setError("Gagal memuat rincian data. Pastikan koneksi internet stabil atau coba lagi nanti.");
             } finally {
                 setLoading(false);
