@@ -57,6 +57,14 @@ export interface Delivery {
     updatedAt: string;
 }
 
+export interface HarvestOption {
+    id: string;
+    buruhId: string;
+    buruhName?: string;
+    tanggalPanen?: string;
+    kilogram: number;
+}
+
 export async function createDelivery(data: CreateDeliveryData): Promise<Delivery> {
     return deliveryFetcher(`${API_BASE}/deliveries`, {
         method: "POST",
@@ -105,6 +113,25 @@ export async function adminApproveDelivery(id: string, isApproved: boolean, appr
 }
 
 export async function getSupirList(name?: string) {
-    const query = new URLSearchParams(name ? { name } : {}).toString();
+    const query = new URLSearchParams({
+        ...(name ? { name } : {}),
+        page: '0',
+        size: '50'
+    }).toString();
     return deliveryFetcher(`${API_BASE}/supir-list${query ? `?${query}` : ""}`);
+}
+
+export async function getSupirListPaged(name?: string, page = 0, size = 50) {
+    const query = new URLSearchParams({
+        ...(name ? { name } : {}),
+        page: String(page),
+        size: String(size),
+    }).toString();
+    return deliveryFetcher(`${API_BASE}/supir-list${query ? `?${query}` : ""}`);
+}
+
+export async function getHarvestOptions(params?: { buruhId?: string; tanggalPanen?: string; search?: string; page?: number; size?: number }): Promise<HarvestOption[]> {
+    const clean = Object.fromEntries(Object.entries(params || {}).filter(([_, v]) => v !== undefined && v !== ""));
+    const query = new URLSearchParams(clean as Record<string,string>).toString();
+    return deliveryFetcher(`${API_BASE}/deliveries/harvest-options${query ? `?${query}` : ""}`);
 }
