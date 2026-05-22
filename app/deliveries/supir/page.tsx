@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { getStoredUser } from '@/lib/auth-api';
 import { getSupirTasks, Delivery, advanceDeliveryStatus } from '@/lib/delivery-api';
@@ -16,16 +16,17 @@ export default function SupirDeliveryPage() {
     const [errorMsg, setErrorMsg] = useState("");
     const [updatingId, setUpdatingId] = useState<string | null>(null);
 
-    const fetchTasks = async () => {
+    const fetchTasks = useCallback(async () => {
         try {
             const data = await getSupirTasks();
             setTasks(data);
-        } catch (err: any) {
-            setErrorMsg(err.message || 'Gagal memuat tugas pengiriman');
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : 'Gagal memuat tugas pengiriman';
+            setErrorMsg(message);
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
     useEffect(() => {
         if (!authorized) {
@@ -33,8 +34,7 @@ export default function SupirDeliveryPage() {
             return;
         }
         fetchTasks();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [authorized, router]);
+    }, [authorized, router, fetchTasks]);
 
     const handleQuickAction = async (e: React.MouseEvent, id: string) => {
         e.stopPropagation(); // prevent navigation to detail page
@@ -42,8 +42,9 @@ export default function SupirDeliveryPage() {
             setUpdatingId(id);
             await advanceDeliveryStatus(id);
             await fetchTasks();
-        } catch (err: any) {
-            alert(err.message || "Gagal mengupdate status");
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : "Gagal mengupdate status";
+            alert(message);
         } finally {
             setUpdatingId(null);
         }

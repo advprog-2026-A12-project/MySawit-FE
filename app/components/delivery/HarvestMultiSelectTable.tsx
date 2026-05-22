@@ -1,13 +1,14 @@
 "use client";
 
 import React from 'react';
+import { HarvestOption } from '@/lib/delivery-api';
 
 export function HarvestMultiSelectTable({ 
     harvests, 
     selectedIds, 
     onSelectionChange 
 }: { 
-    harvests: any[], 
+    harvests: HarvestOption[], 
     selectedIds: string[], 
     onSelectionChange: (ids: string[]) => void 
 }) {

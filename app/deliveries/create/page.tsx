@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { getStoredUser, UserListItem } from '@/lib/auth-api';
-import { createDelivery, getSupirListPaged, getHarvestOptions } from '@/lib/delivery-api';
+import { createDelivery, getSupirListPaged, getHarvestOptions, HarvestOption } from '@/lib/delivery-api';
 import { HarvestMultiSelectTable } from '@/app/components/delivery/HarvestMultiSelectTable';
 import { PayloadSummaryCard } from '@/app/components/delivery/PayloadSummaryCard';
 
@@ -14,7 +14,7 @@ export default function CreateDeliveryPage() {
 
     const [submitting, setSubmitting] = useState(false);
     
-    const [harvests, setHarvests] = useState<any[]>([]);
+    const [harvests, setHarvests] = useState<HarvestOption[]>([]);
     const [selectedHarvestIds, setSelectedHarvestIds] = useState<string[]>([]);
     const [harvestPage, setHarvestPage] = useState(0);
     const [harvestLoading, setHarvestLoading] = useState(true);
@@ -52,7 +52,7 @@ export default function CreateDeliveryPage() {
                 setHarvests(prev => reset ? [] : prev);
                 setHarvestHasMore(false);
             }
-        } catch (err) {
+        } catch (err: unknown) {
             console.error(err);
             setHarvestError("Gagal memuat daftar panen. Silahkan coba lagi.");
         } finally {
@@ -74,7 +74,7 @@ export default function CreateDeliveryPage() {
                 const supirData = await getSupirListPaged(undefined, 0, 50);
                 if (supirData?.data?.content) setSupirList(supirData.data.content);
                 else if (Array.isArray(supirData)) setSupirList(supirData);
-            } catch (err) {
+            } catch (err: unknown) {
                 console.error(err);
                 setSupirError("Gagal memuat daftar supir. Silahkan coba lagi.");
             } finally {
@@ -126,8 +126,9 @@ export default function CreateDeliveryPage() {
             setTimeout(() => {
                 router.push('/deliveries/mandor');
             }, 1500);
-        } catch (error: any) {
-            setMsg({ text: error.message || "Gagal menghubungi server", type: "error" });
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : "Gagal menghubungi server";
+            setMsg({ text: message, type: "error" });
             setSubmitting(false);
         }
     };

@@ -91,7 +91,7 @@ export default function MandorPage() {
             await approvePanen(id);
             setActionMsg("✅ Panen berhasil disetujui!");
             await fetchData();
-        } catch (err) {
+        } catch {
             // Disembunyikan error dari backend
             setActionMsg("❌ Gagal menyetujui laporan. Silakan coba lagi.");
         } finally {
@@ -118,7 +118,7 @@ export default function MandorPage() {
             setAlasan("");
 
             await fetchData();
-        } catch (err) {
+        } catch {
             // Disembunyikan error dari backend
             setActionMsg("❌ Gagal menolak laporan. Silakan coba lagi.");
         } finally {

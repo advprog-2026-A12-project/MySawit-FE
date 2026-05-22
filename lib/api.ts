@@ -3,8 +3,8 @@ import { login as authLogin, persistAuthSession, UserProfile } from "@/lib/auth-
 // =========================
 // BASE CONFIG
 // =========================
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://mysawit-sawit.onrender.com/api";
-const AUTH_BASE = process.env.NEXT_PUBLIC_AUTH_URL || "https://mysawit-auth-1.onrender.com";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://mysawit-sawit.onrender.com/api";
+const AUTH_BASE = process.env.NEXT_PUBLIC_AUTH_API_URL || "https://mysawit-auth-1.onrender.com";
 
 // =========================
 // HELPER

@@ -66,7 +66,7 @@ export interface HarvestOption {
 }
 
 export async function createDelivery(data: CreateDeliveryData): Promise<Delivery> {
-    return deliveryFetcher(`${API_BASE}/deliveries`, {
+    return deliveryFetcher(`${API_BASE}/api/deliveries`, {
         method: "POST",
         body: JSON.stringify(data),
     });
@@ -74,19 +74,19 @@ export async function createDelivery(data: CreateDeliveryData): Promise<Delivery
 
 export async function getDeliveries(params?: { supirName?: string; mandorId?: string; date?: string }): Promise<Delivery[]> {
     const cleanParams = Object.fromEntries(
-        Object.entries(params || {}).filter(([_, v]) => v !== "" && v !== undefined)
+        Object.entries(params || {}).filter(([, v]) => v !== "" && v !== undefined)
     ) as Record<string, string>;
 
     const query = new URLSearchParams(cleanParams).toString();
-    return deliveryFetcher(`${API_BASE}/deliveries${query ? `?${query}` : ""}`);
+    return deliveryFetcher(`${API_BASE}/api/deliveries${query ? `?${query}` : ""}`);
 }
 
 export async function getSupirTasks(): Promise<Delivery[]> {
-    return deliveryFetcher(`${API_BASE}/deliveries/supir-tasks`);
+    return deliveryFetcher(`${API_BASE}/api/deliveries/supir-tasks`);
 }
 
 export async function advanceDeliveryStatus(id: string): Promise<Delivery> {
-    return deliveryFetcher(`${API_BASE}/deliveries/${id}/status`, {
+    return deliveryFetcher(`${API_BASE}/api/deliveries/${id}/status`, {
         method: "PATCH",
     });
 }
@@ -96,7 +96,7 @@ export async function mandorApproveDelivery(id: string, isApproved: boolean, rej
         isApproved: isApproved.toString(),
         ...(rejectionReason ? { rejectionReason } : {}),
     }).toString();
-    return deliveryFetcher(`${API_BASE}/deliveries/${id}/mandor-approval?${query}`, {
+    return deliveryFetcher(`${API_BASE}/api/deliveries/${id}/mandor-approval?${query}`, {
         method: "PATCH",
     });
 }
@@ -107,7 +107,7 @@ export async function adminApproveDelivery(id: string, isApproved: boolean, appr
         ...(approvedPayloadKg ? { approvedPayloadKg: approvedPayloadKg.toString() } : {}),
         ...(rejectionReason ? { rejectionReason } : {}),
     }).toString();
-    return deliveryFetcher(`${API_BASE}/deliveries/${id}/admin-approval?${query}`, {
+    return deliveryFetcher(`${API_BASE}/api/deliveries/${id}/admin-approval?${query}`, {
         method: "PATCH",
     });
 }
@@ -118,7 +118,7 @@ export async function getSupirList(name?: string) {
         page: '0',
         size: '50'
     }).toString();
-    return deliveryFetcher(`${API_BASE}/supir-list${query ? `?${query}` : ""}`);
+    return deliveryFetcher(`${API_BASE}/api/supir-list${query ? `?${query}` : ""}`);
 }
 
 export async function getSupirListPaged(name?: string, page = 0, size = 50) {
@@ -127,11 +127,11 @@ export async function getSupirListPaged(name?: string, page = 0, size = 50) {
         page: String(page),
         size: String(size),
     }).toString();
-    return deliveryFetcher(`${API_BASE}/supir-list${query ? `?${query}` : ""}`);
+    return deliveryFetcher(`${API_BASE}/api/supir-list${query ? `?${query}` : ""}`);
 }
 
 export async function getHarvestOptions(params?: { buruhId?: string; tanggalPanen?: string; search?: string; page?: number; size?: number }): Promise<HarvestOption[]> {
-    const clean = Object.fromEntries(Object.entries(params || {}).filter(([_, v]) => v !== undefined && v !== ""));
+    const clean = Object.fromEntries(Object.entries(params || {}).filter(([, v]) => v !== undefined && v !== ""));
     const query = new URLSearchParams(clean as Record<string,string>).toString();
-    return deliveryFetcher(`${API_BASE}/deliveries/harvest-options${query ? `?${query}` : ""}`);
+    return deliveryFetcher(`${API_BASE}/api/deliveries/harvest-options${query ? `?${query}` : ""}`);
 }

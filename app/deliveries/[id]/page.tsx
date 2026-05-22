@@ -7,7 +7,6 @@ import {
     getDeliveries, getSupirTasks, advanceDeliveryStatus, 
     mandorApproveDelivery, adminApproveDelivery, Delivery 
 } from '@/lib/delivery-api';
-import { StatusBadge } from '@/app/components/delivery/StatusBadge';
 import { TimelineTracker } from '@/app/components/delivery/TimelineTracker';
 import { ApprovalModal } from '@/app/components/delivery/ApprovalModal';
 
@@ -40,8 +39,9 @@ export default function DeliveryDetailPage(props: { params: Promise<{ id: string
             } else {
                 setMsg({ text: "Pengiriman tidak ditemukan atau Anda tidak memiliki akses.", type: "error" });
             }
-        } catch (err: any) {
-            setMsg({ text: err.message || "Gagal memuat detail pengiriman", type: "error" });
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : "Gagal memuat detail pengiriman";
+            setMsg({ text: message, type: "error" });
         } finally {
             setLoading(false);
         }
@@ -63,8 +63,9 @@ export default function DeliveryDetailPage(props: { params: Promise<{ id: string
             const updated = await advanceDeliveryStatus(delivery.id);
             setDelivery(updated);
             setMsg({ text: "Status pengiriman berhasil diperbarui!", type: "success" });
-        } catch (err: any) {
-            setMsg({ text: err.message || "Gagal memperbarui status", type: "error" });
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : "Gagal memperbarui status";
+            setMsg({ text: message, type: "error" });
         } finally {
             setSubmitting(false);
         }
@@ -84,8 +85,9 @@ export default function DeliveryDetailPage(props: { params: Promise<{ id: string
                 setDelivery(updated);
                 setMsg({ text: "Pengiriman berhasil disetujui!", type: "success" });
             }
-        } catch (err: any) {
-            setMsg({ text: err.message || "Gagal menyetujui pengiriman", type: "error" });
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : "Gagal menyetujui pengiriman";
+            setMsg({ text: message, type: "error" });
         } finally {
             setSubmitting(false);
         }
@@ -105,8 +107,9 @@ export default function DeliveryDetailPage(props: { params: Promise<{ id: string
                 setDelivery(updated);
                 setMsg({ text: "Pengiriman berhasil ditolak.", type: "success" });
             }
-        } catch (err: any) {
-            setMsg({ text: err.message || "Gagal menolak pengiriman", type: "error" });
+        } catch (err: unknown) {
+            const message = err instanceof Error ? err.message : "Gagal menolak pengiriman";
+            setMsg({ text: message, type: "error" });
         } finally {
             setSubmitting(false);
         }

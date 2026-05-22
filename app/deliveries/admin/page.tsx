@@ -25,8 +25,9 @@ export default function AdminDeliveryPage() {
             try {
                 const data = await getDeliveries();
                 setDeliveries(data);
-            } catch (err: any) {
-                setErrorMsg(err.message || 'Gagal memuat daftar pengiriman');
+            } catch (err: unknown) {
+                const message = err instanceof Error ? err.message : 'Gagal memuat daftar pengiriman';
+                setErrorMsg(message);
             } finally {
                 setLoading(false);
             }
