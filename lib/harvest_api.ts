@@ -124,7 +124,8 @@ export async function submitHarvest(params: {
         formData.append("photos", photo);
     });
 
-    return fetcherMultipart(`${API_BASE}/harvest`, formData);
+    // REVISI: Tambahkan /api
+    return fetcherMultipart(`${API_BASE}/api/harvest`, formData);
 }
 
 // =========================
@@ -137,7 +138,8 @@ export async function getMyHarvest(params?: {
 }) {
     const query = new URLSearchParams(cleanObject(params)).toString();
 
-    return fetcher(`${API_BASE}/harvest/my${query ? `?${query}` : ""}`);
+    // REVISI: Tambahkan /api
+    return fetcher(`${API_BASE}/api/harvest/my${query ? `?${query}` : ""}`);
 }
 
 // =========================
@@ -149,7 +151,8 @@ export async function getPanenBawahan(params?: {
 }) {
     const query = new URLSearchParams(cleanObject(params)).toString();
 
-    return fetcher(`${API_BASE}/harvest/bawahan${query ? `?${query}` : ""}`);
+    // REVISI: Tambahkan /api
+    return fetcher(`${API_BASE}/api/harvest/bawahan${query ? `?${query}` : ""}`);
 }
 
 // =========================
@@ -176,7 +179,8 @@ export async function getMandorBuruhs(
 // MANDOR: APPROVE
 // =========================
 export async function approvePanen(id: string) {
-    return fetcher(`${API_BASE}/harvest/${id}/approve`, {
+    // REVISI: Tambahkan /api
+    return fetcher(`${API_BASE}/api/harvest/${id}/approve`, {
         method: "PATCH",
     });
 }
@@ -185,7 +189,8 @@ export async function approvePanen(id: string) {
 // MANDOR: REJECT
 // =========================
 export async function rejectPanen(id: string, rejectionReason: string) {
-    return fetcher(`${API_BASE}/harvest/${id}/reject`, {
+    // REVISI: Tambahkan /api
+    return fetcher(`${API_BASE}/api/harvest/${id}/reject`, {
         method: "PATCH",
         body: JSON.stringify({ rejectionReason }),
     });
@@ -195,14 +200,16 @@ export async function rejectPanen(id: string, rejectionReason: string) {
 // DETAIL HARVEST
 // =========================
 export async function getHarvestDetail(id: string) {
-    return fetcher(`${API_BASE}/harvest/${id}`);
+    // REVISI: Tambahkan /api
+    return fetcher(`${API_BASE}/api/harvest/${id}`);
 }
 
 // =========================
 // DELETE HARVEST
 // =========================
 export async function deleteHarvest(id: string) {
-    await fetcher(`${API_BASE}/harvest/${id}`, {
+    // REVISI: Tambahkan /api
+    await fetcher(`${API_BASE}/api/harvest/${id}`, {
         method: "DELETE",
     });
 
