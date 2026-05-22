@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { getStoredUser } from '@/lib/auth-api';
 import { getDeliveries, Delivery } from '@/lib/delivery-api';
 import { StatusBadge } from '@/app/components/delivery/StatusBadge';
+import { getErrorMessage } from '@/lib/utils';
 
 export default function AdminDeliveryPage() {
     const router = useRouter();
@@ -25,8 +26,8 @@ export default function AdminDeliveryPage() {
             try {
                 const data = await getDeliveries();
                 setDeliveries(data);
-            } catch (err: any) {
-                setErrorMsg(err.message || 'Gagal memuat daftar pengiriman');
+            } catch (err: unknown) {
+                setErrorMsg(getErrorMessage(err, 'Gagal memuat daftar pengiriman'));
             } finally {
                 setLoading(false);
             }
