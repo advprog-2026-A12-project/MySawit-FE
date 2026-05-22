@@ -66,7 +66,7 @@ export async function createDelivery(data: CreateDeliveryData): Promise<Delivery
 
 export async function getDeliveries(params?: { supirName?: string; mandorId?: string; date?: string }): Promise<Delivery[]> {
     const cleanParams = Object.fromEntries(
-        Object.entries(params || {}).filter(([_, v]) => v !== "" && v !== undefined)
+        Object.entries(params || {}).filter(([, v]) => v !== "" && v !== undefined)
     ) as Record<string, string>;
 
     const query = new URLSearchParams(cleanParams).toString();
