@@ -1,6 +1,6 @@
 import { getToken } from "@/lib/api";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://mysawit-sawit.onrender.com/api";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_DELIVERY || "https://mysawit-sawit.onrender.com/api";
 
 export async function deliveryFetcher(url: string, options?: RequestInit) {
     const token = getToken();
@@ -57,8 +57,16 @@ export interface Delivery {
     updatedAt: string;
 }
 
+export interface HarvestOption {
+    id: string;
+    buruhId: string;
+    buruhName?: string;
+    tanggalPanen?: string;
+    kilogram: number;
+}
+
 export async function createDelivery(data: CreateDeliveryData): Promise<Delivery> {
-    return deliveryFetcher(`${API_BASE}/deliveries`, {
+    return deliveryFetcher(`${API_BASE}/api/deliveries`, {
         method: "POST",
         body: JSON.stringify(data),
     });
@@ -70,15 +78,15 @@ export async function getDeliveries(params?: { supirName?: string; mandorId?: st
     ) as Record<string, string>;
 
     const query = new URLSearchParams(cleanParams).toString();
-    return deliveryFetcher(`${API_BASE}/deliveries${query ? `?${query}` : ""}`);
+    return deliveryFetcher(`${API_BASE}/api/deliveries${query ? `?${query}` : ""}`);
 }
 
 export async function getSupirTasks(): Promise<Delivery[]> {
-    return deliveryFetcher(`${API_BASE}/deliveries/supir-tasks`);
+    return deliveryFetcher(`${API_BASE}/api/deliveries/supir-tasks`);
 }
 
 export async function advanceDeliveryStatus(id: string): Promise<Delivery> {
-    return deliveryFetcher(`${API_BASE}/deliveries/${id}/status`, {
+    return deliveryFetcher(`${API_BASE}/api/deliveries/${id}/status`, {
         method: "PATCH",
     });
 }
@@ -88,7 +96,7 @@ export async function mandorApproveDelivery(id: string, isApproved: boolean, rej
         isApproved: isApproved.toString(),
         ...(rejectionReason ? { rejectionReason } : {}),
     }).toString();
-    return deliveryFetcher(`${API_BASE}/deliveries/${id}/mandor-approval?${query}`, {
+    return deliveryFetcher(`${API_BASE}/api/deliveries/${id}/mandor-approval?${query}`, {
         method: "PATCH",
     });
 }
@@ -99,12 +107,31 @@ export async function adminApproveDelivery(id: string, isApproved: boolean, appr
         ...(approvedPayloadKg ? { approvedPayloadKg: approvedPayloadKg.toString() } : {}),
         ...(rejectionReason ? { rejectionReason } : {}),
     }).toString();
-    return deliveryFetcher(`${API_BASE}/deliveries/${id}/admin-approval?${query}`, {
+    return deliveryFetcher(`${API_BASE}/api/deliveries/${id}/admin-approval?${query}`, {
         method: "PATCH",
     });
 }
 
 export async function getSupirList(name?: string) {
-    const query = new URLSearchParams(name ? { name } : {}).toString();
-    return deliveryFetcher(`${API_BASE}/supir-list${query ? `?${query}` : ""}`);
+    const query = new URLSearchParams({
+        ...(name ? { name } : {}),
+        page: '0',
+        size: '50'
+    }).toString();
+    return deliveryFetcher(`${API_BASE}/api/supir-list${query ? `?${query}` : ""}`);
+}
+
+export async function getSupirListPaged(name?: string, page = 0, size = 50) {
+    const query = new URLSearchParams({
+        ...(name ? { name } : {}),
+        page: String(page),
+        size: String(size),
+    }).toString();
+    return deliveryFetcher(`${API_BASE}/api/supir-list${query ? `?${query}` : ""}`);
+}
+
+export async function getHarvestOptions(params?: { buruhId?: string; tanggalPanen?: string; search?: string; page?: number; size?: number }): Promise<HarvestOption[]> {
+    const clean = Object.fromEntries(Object.entries(params || {}).filter(([, v]) => v !== undefined && v !== ""));
+    const query = new URLSearchParams(clean as Record<string,string>).toString();
+    return deliveryFetcher(`${API_BASE}/api/deliveries/harvest-options${query ? `?${query}` : ""}`);
 }

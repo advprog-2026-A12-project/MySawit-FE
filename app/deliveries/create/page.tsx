@@ -1,11 +1,10 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { getStoredUser, UserListItem } from '@/lib/auth-api';
-import { getPanenBawahan } from '@/lib/api';
-import { createDelivery, getSupirList } from '@/lib/delivery-api';
-import { HarvestMultiSelectTable, type HarvestRow } from '@/app/components/delivery/HarvestMultiSelectTable';
+import { createDelivery, getSupirList, getHarvestOptions, HarvestOption } from '@/lib/delivery-api';
+import { HarvestMultiSelectTable } from '@/app/components/delivery/HarvestMultiSelectTable';
 import { PayloadSummaryCard } from '@/app/components/delivery/PayloadSummaryCard';
 import { getErrorMessage } from '@/lib/utils';
 
@@ -14,16 +13,54 @@ export default function CreateDeliveryPage() {
     const user = useMemo(() => getStoredUser(), []);
     const authorized = user?.role === 'MANDOR';
 
-    const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     
-    const [harvests, setHarvests] = useState<HarvestRow[]>([]);
+    const [harvests, setHarvests] = useState<HarvestOption[]>([]);
     const [selectedHarvestIds, setSelectedHarvestIds] = useState<string[]>([]);
-    
+    const [harvestPage, setHarvestPage] = useState(0);
+    const [harvestLoading, setHarvestLoading] = useState(true);
+    const [harvestLoadingMore, setHarvestLoadingMore] = useState(false);
+    const [harvestHasMore, setHarvestHasMore] = useState(true);
+    const [harvestSearch, setHarvestSearch] = useState("");
+    const harvestSearchRef = useRef<number | null>(null);
+    const [harvestError, setHarvestError] = useState("");
+
     const [supirList, setSupirList] = useState<UserListItem[]>([]);
     const [selectedSupirId, setSelectedSupirId] = useState("");
+    const [supirLoading, setSupirLoading] = useState(true);
+    const [supirError, setSupirError] = useState("");
     
     const [msg, setMsg] = useState({ text: "", type: "" });
+
+    const loadHarvestPage = useCallback(async (pageIndex = 0, reset = false) => {
+        if (reset) {
+            setHarvestLoading(true);
+            setHarvestError("");
+        }
+
+        try {
+            const res = await getHarvestOptions({
+                search: harvestSearch || undefined,
+                page: pageIndex,
+                size: 50,
+            });
+
+            if (Array.isArray(res)) {
+                setHarvests(prev => reset ? res : [...prev, ...res]);
+                setHarvestPage(pageIndex);
+                setHarvestHasMore(res.length === 50);
+            } else {
+                setHarvests(prev => reset ? [] : prev);
+                setHarvestHasMore(false);
+            }
+        } catch (err: unknown) {
+            console.error(err);
+            setHarvestError("Gagal memuat daftar panen. Silahkan coba lagi.");
+        } finally {
+            setHarvestLoading(false);
+            setHarvestLoadingMore(false);
+        }
+    }, [harvestSearch]);
 
     useEffect(() => {
         if (!authorized) {
@@ -31,28 +68,26 @@ export default function CreateDeliveryPage() {
             return;
         }
 
-        const loadInitialData = async () => {
+        const loadSupirData = async () => {
+            setSupirLoading(true);
+            setSupirError("");
             try {
                 // Fetch supir list
                 const supirData = await getSupirList();
                 const supirContent = Array.isArray(supirData) ? supirData : supirData?.data?.content;
                 if (Array.isArray(supirContent)) setSupirList(supirContent);
 
-                // Fetch harvests (Only APPROVED ones)
-                const harvestData = (await getPanenBawahan()) as HarvestRow[];
-                if (Array.isArray(harvestData)) {
-                    setHarvests(harvestData.filter((h) => h.status === 'APPROVED'));
-                }
             } catch (err: unknown) {
                 console.error(err);
                 setMsg({ text: getErrorMessage(err, "Gagal memuat data awal."), type: "error" });
             } finally {
-                setLoading(false);
+                setSupirLoading(false);
             }
         };
 
-        loadInitialData();
-    }, [authorized, router]);
+        loadSupirData();
+        loadHarvestPage(0, true);
+    }, [authorized, router, loadHarvestPage]);
 
     const totalPayload = useMemo(() => {
         return harvests
@@ -100,8 +135,21 @@ export default function CreateDeliveryPage() {
         }
     };
 
+    const loadMoreHarvests = useCallback(async () => {
+        if (!harvestHasMore || harvestLoadingMore) return;
+        setHarvestLoadingMore(true);
+        await loadHarvestPage(harvestPage + 1, false);
+    }, [harvestHasMore, harvestLoadingMore, harvestPage, loadHarvestPage]);
+
+    useEffect(() => {
+        if (harvestSearchRef.current) window.clearTimeout(harvestSearchRef.current);
+        harvestSearchRef.current = window.setTimeout(() => {
+            loadHarvestPage(0, true);
+        }, 300);
+        return () => { if (harvestSearchRef.current) window.clearTimeout(harvestSearchRef.current); };
+    }, [harvestSearch, loadHarvestPage]);
+
     if (!authorized) return <div className="p-8 text-center">Memverifikasi akses Anda...</div>;
-    if (loading) return <div className="p-8 text-center">Loading Data...</div>;
 
     return (
         <main className="min-h-screen bg-gray-50 p-6 md:p-8">
@@ -128,11 +176,41 @@ export default function CreateDeliveryPage() {
                 <div className="grid gap-8">
                     <div className="bg-white p-6 rounded-2xl border border-gray-200">
                         <h2 className="text-lg font-semibold text-gray-900 mb-4">1. Pilih Hasil Panen</h2>
-                        <HarvestMultiSelectTable 
-                            harvests={harvests} 
-                            selectedIds={selectedHarvestIds} 
-                            onSelectionChange={setSelectedHarvestIds} 
-                        />
+                        <div className="mb-4">
+                            <input
+                                type="text"
+                                placeholder="Cari panen berdasarkan ID atau catatan..."
+                                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                                value={harvestSearch}
+                                onChange={(e) => setHarvestSearch(e.target.value)}
+                            />
+                        </div>
+                        {harvestLoading ? (
+                            <div className="p-8 text-center border rounded-xl bg-gray-50 text-gray-500">
+                                Memuat daftar panen...
+                            </div>
+                        ) : harvestError ? (
+                            <div className="p-4 rounded-2xl bg-red-50 border border-red-200 text-red-700">
+                                {harvestError}
+                            </div>
+                        ) : (
+                            <HarvestMultiSelectTable 
+                                harvests={harvests} 
+                                selectedIds={selectedHarvestIds} 
+                                onSelectionChange={setSelectedHarvestIds} 
+                            />
+                        )}
+                        {harvestHasMore && !harvestLoading && (
+                            <div className="mt-4 text-center">
+                                <button
+                                    onClick={loadMoreHarvests}
+                                    disabled={harvestLoadingMore}
+                                    className="inline-flex items-center px-4 py-2 rounded-lg border bg-white text-sm font-medium text-gray-700 hover:bg-gray-50"
+                                >
+                                    {harvestLoadingMore ? 'Memuat...' : 'Muat Lagi'}
+                                </button>
+                            </div>
+                        )}
                     </div>
 
                     <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
@@ -143,9 +221,17 @@ export default function CreateDeliveryPage() {
                             <form onSubmit={handleSubmit} className="space-y-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">Pilih Supir Truk</label>
-                                    {supirList.length > 0 ? (
-                                        <select 
-                                            required 
+                                    {supirLoading ? (
+                                        <div className="p-3 rounded-lg border border-dashed border-gray-300 bg-gray-50 text-gray-500 text-sm">
+                                            Memuat daftar supir...
+                                        </div>
+                                    ) : supirError ? (
+                                        <div className="p-3 rounded-lg border border-red-200 bg-red-50 text-red-700 text-sm">
+                                            {supirError}
+                                        </div>
+                                    ) : supirList.length > 0 ? (
+                                        <select
+                                            required
                                             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                                             value={selectedSupirId}
                                             onChange={(e) => setSelectedSupirId(e.target.value)}
@@ -156,14 +242,9 @@ export default function CreateDeliveryPage() {
                                             ))}
                                         </select>
                                     ) : (
-                                        <input 
-                                            type="text" 
-                                            required 
-                                            placeholder="Masukkan UUID Supir Manual"
-                                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                                            value={selectedSupirId}
-                                            onChange={(e) => setSelectedSupirId(e.target.value)}
-                                        />
+                                        <div className="p-3 rounded-lg border border-gray-200 bg-gray-50 text-gray-500 text-sm">
+                                            Tidak ada supir yang dapat dipilih saat ini.
+                                        </div>
                                     )}
                                 </div>
 
