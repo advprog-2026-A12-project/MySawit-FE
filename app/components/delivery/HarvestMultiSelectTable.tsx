@@ -70,7 +70,7 @@ export function HarvestMultiSelectTable({
                                 />
                             </td>
                             <td className="p-3 font-mono text-xs text-gray-500">{h.id.substring(0, 8)}...</td>
-                            <td className="p-3">{new Date(h.tanggalPanen || h.createdAt || new Date()).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+                            <td className="p-3">{new Date(h.tanggalPanen || new Date()).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
                             <td className="p-3">{h.buruhName || 'Tidak diketahui'}</td>
                             <td className="p-3 font-medium text-right">{h.kilogram} Kg</td>
                         </tr>
