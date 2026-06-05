@@ -3,9 +3,10 @@
 import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { getStoredUser, UserListItem } from '@/lib/auth-api';
-import { createDelivery, getSupirListPaged, getHarvestOptions, HarvestOption } from '@/lib/delivery-api';
+import { createDelivery, getSupirList, getHarvestOptions, HarvestOption } from '@/lib/delivery-api';
 import { HarvestMultiSelectTable } from '@/app/components/delivery/HarvestMultiSelectTable';
 import { PayloadSummaryCard } from '@/app/components/delivery/PayloadSummaryCard';
+import { getErrorMessage } from '@/lib/utils';
 
 export default function CreateDeliveryPage() {
     const router = useRouter();
@@ -71,12 +72,14 @@ export default function CreateDeliveryPage() {
             setSupirLoading(true);
             setSupirError("");
             try {
-                const supirData = await getSupirListPaged(undefined, 0, 50);
-                if (supirData?.data?.content) setSupirList(supirData.data.content);
-                else if (Array.isArray(supirData)) setSupirList(supirData);
+                // Fetch supir list
+                const supirData = await getSupirList();
+                const supirContent = Array.isArray(supirData) ? supirData : supirData?.data?.content;
+                if (Array.isArray(supirContent)) setSupirList(supirContent);
+
             } catch (err: unknown) {
                 console.error(err);
-                setSupirError("Gagal memuat daftar supir. Silahkan coba lagi.");
+                setMsg({ text: getErrorMessage(err, "Gagal memuat data awal."), type: "error" });
             } finally {
                 setSupirLoading(false);
             }
@@ -89,7 +92,7 @@ export default function CreateDeliveryPage() {
     const totalPayload = useMemo(() => {
         return harvests
             .filter(h => selectedHarvestIds.includes(h.id))
-            .reduce((sum, h) => sum + (h.kilogram || 0), 0);
+            .reduce((sum, h) => sum + (h.kilogram ?? 0), 0);
     }, [harvests, selectedHarvestIds]);
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -127,8 +130,7 @@ export default function CreateDeliveryPage() {
                 router.push('/deliveries/mandor');
             }, 1500);
         } catch (error: unknown) {
-            const message = error instanceof Error ? error.message : "Gagal menghubungi server";
-            setMsg({ text: message, type: "error" });
+            setMsg({ text: getErrorMessage(error, "Gagal menghubungi server"), type: "error" });
             setSubmitting(false);
         }
     };
