@@ -1,6 +1,6 @@
 import { getToken } from "@/lib/api";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://mysawit-sawit.onrender.com/api";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_DELIVERY || "https://mysawit-sawit.onrender.com/api";
 
 export async function deliveryFetcher(url: string, options?: RequestInit) {
     const token = getToken();
