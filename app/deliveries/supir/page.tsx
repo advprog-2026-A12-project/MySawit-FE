@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useEffect, useState, useMemo, useCallback } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { getStoredUser } from '@/lib/auth-api';
 import { getSupirTasks, Delivery, advanceDeliveryStatus } from '@/lib/delivery-api';
 import { StatusBadge } from '@/app/components/delivery/StatusBadge';
+import { getErrorMessage } from '@/lib/utils';
 
 export default function SupirDeliveryPage() {
     const router = useRouter();
@@ -21,8 +22,7 @@ export default function SupirDeliveryPage() {
             const data = await getSupirTasks();
             setTasks(data);
         } catch (err: unknown) {
-            const message = err instanceof Error ? err.message : 'Gagal memuat tugas pengiriman';
-            setErrorMsg(message);
+            setErrorMsg(getErrorMessage(err, 'Gagal memuat tugas pengiriman'));
         } finally {
             setLoading(false);
         }
@@ -43,8 +43,7 @@ export default function SupirDeliveryPage() {
             await advanceDeliveryStatus(id);
             await fetchTasks();
         } catch (err: unknown) {
-            const message = err instanceof Error ? err.message : "Gagal mengupdate status";
-            alert(message);
+            alert(getErrorMessage(err, "Gagal mengupdate status"));
         } finally {
             setUpdatingId(null);
         }

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { getHarvestDetail } from "@/lib/api";
+import { getHarvestDetail } from "@/lib/harvest_api";
 import Image from "next/image";
 
 interface HarvestDetail {

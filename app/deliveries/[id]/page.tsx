@@ -9,6 +9,7 @@ import {
 } from '@/lib/delivery-api';
 import { TimelineTracker } from '@/app/components/delivery/TimelineTracker';
 import { ApprovalModal } from '@/app/components/delivery/ApprovalModal';
+import { getErrorMessage } from '@/lib/utils';
 
 export default function DeliveryDetailPage(props: { params: Promise<{ id: string }> }) {
     const params = use(props.params);
@@ -40,8 +41,7 @@ export default function DeliveryDetailPage(props: { params: Promise<{ id: string
                 setMsg({ text: "Pengiriman tidak ditemukan atau Anda tidak memiliki akses.", type: "error" });
             }
         } catch (err: unknown) {
-            const message = err instanceof Error ? err.message : "Gagal memuat detail pengiriman";
-            setMsg({ text: message, type: "error" });
+            setMsg({ text: getErrorMessage(err, "Gagal memuat detail pengiriman"), type: "error" });
         } finally {
             setLoading(false);
         }
@@ -64,8 +64,7 @@ export default function DeliveryDetailPage(props: { params: Promise<{ id: string
             setDelivery(updated);
             setMsg({ text: "Status pengiriman berhasil diperbarui!", type: "success" });
         } catch (err: unknown) {
-            const message = err instanceof Error ? err.message : "Gagal memperbarui status";
-            setMsg({ text: message, type: "error" });
+            setMsg({ text: getErrorMessage(err, "Gagal memperbarui status"), type: "error" });
         } finally {
             setSubmitting(false);
         }
@@ -75,7 +74,7 @@ export default function DeliveryDetailPage(props: { params: Promise<{ id: string
         if (!delivery) return;
         try {
             setSubmitting(true);
-            let updated;
+            let updated: Delivery | undefined;
             if (role === 'MANDOR') {
                 updated = await mandorApproveDelivery(delivery.id, true);
             } else if (role === 'ADMIN') {
@@ -86,8 +85,7 @@ export default function DeliveryDetailPage(props: { params: Promise<{ id: string
                 setMsg({ text: "Pengiriman berhasil disetujui!", type: "success" });
             }
         } catch (err: unknown) {
-            const message = err instanceof Error ? err.message : "Gagal menyetujui pengiriman";
-            setMsg({ text: message, type: "error" });
+            setMsg({ text: getErrorMessage(err, "Gagal menyetujui pengiriman"), type: "error" });
         } finally {
             setSubmitting(false);
         }
@@ -97,7 +95,7 @@ export default function DeliveryDetailPage(props: { params: Promise<{ id: string
         if (!delivery) return;
         try {
             setSubmitting(true);
-            let updated;
+            let updated: Delivery | undefined;
             if (role === 'MANDOR') {
                 updated = await mandorApproveDelivery(delivery.id, false, reason);
             } else if (role === 'ADMIN') {
@@ -108,8 +106,7 @@ export default function DeliveryDetailPage(props: { params: Promise<{ id: string
                 setMsg({ text: "Pengiriman berhasil ditolak.", type: "success" });
             }
         } catch (err: unknown) {
-            const message = err instanceof Error ? err.message : "Gagal menolak pengiriman";
-            setMsg({ text: message, type: "error" });
+            setMsg({ text: getErrorMessage(err, "Gagal menolak pengiriman"), type: "error" });
         } finally {
             setSubmitting(false);
         }

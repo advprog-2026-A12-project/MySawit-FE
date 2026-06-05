@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { getMyHarvest, getUser } from "@/lib/api";
+import { getMyHarvest, getUser } from "@/lib/harvest_api";
 import { UserProfile } from "@/lib/auth-api";
 import { useRouter } from "next/navigation";
 

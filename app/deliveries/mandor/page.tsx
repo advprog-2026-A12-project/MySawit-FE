@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { getStoredUser } from '@/lib/auth-api';
 import { getDeliveries, Delivery } from '@/lib/delivery-api';
 import { StatusBadge } from '@/app/components/delivery/StatusBadge';
+import { getErrorMessage } from '@/lib/utils';
 
 export default function MandorDeliveryPage() {
     const router = useRouter();
@@ -27,8 +28,7 @@ export default function MandorDeliveryPage() {
                 const data = await getDeliveries({ mandorId: user?.id });
                 setDeliveries(data);
             } catch (err: unknown) {
-                const message = err instanceof Error ? err.message : 'Gagal memuat daftar pengiriman';
-                setErrorMsg(message);
+                setErrorMsg(getErrorMessage(err, 'Gagal memuat daftar pengiriman'));
             } finally {
                 setLoading(false);
             }

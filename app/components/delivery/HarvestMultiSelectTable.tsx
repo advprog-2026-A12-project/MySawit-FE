@@ -3,6 +3,15 @@
 import React from 'react';
 import { HarvestOption } from '@/lib/delivery-api';
 
+export type HarvestRow = {
+    id: string;
+    status?: string;
+    tanggalPanen?: string;
+    createdAt?: string;
+    buruhName?: string;
+    kilogram?: number;
+};
+
 export function HarvestMultiSelectTable({ 
     harvests, 
     selectedIds, 
@@ -72,7 +81,7 @@ export function HarvestMultiSelectTable({
                             <td className="p-3 font-mono text-xs text-gray-500">{h.id.substring(0, 8)}...</td>
                             <td className="p-3">{new Date(h.tanggalPanen || new Date()).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
                             <td className="p-3">{h.buruhName || 'Tidak diketahui'}</td>
-                            <td className="p-3 font-medium text-right">{h.kilogram} Kg</td>
+                            <td className="p-3 font-medium text-right">{h.kilogram ?? 0} Kg</td>
                         </tr>
                     ))}
                 </tbody>
